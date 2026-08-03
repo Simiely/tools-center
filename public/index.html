@@ -133,7 +133,7 @@ async function load(){
   try{
     const j = await (await fetch("/api/tools", { cache:"no-store" })).json();
     if(!j.ok) throw new Error(j.error||"加载失败");
-    const tools = j.tools || [];
+    const tools = (j.tools || []).filter(t => !t.hidden);
     const appN = tools.filter(t=>t.type==="app").length;
     const linkN = tools.filter(t=>t.type==="link").length;
     const downN = tools.filter(t=>t.status&&t.status.status==="error").length;

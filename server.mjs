@@ -20,7 +20,7 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 function publicTool(t) {
   return {
     id: t.id, name: t.name, desc: t.desc, group: t.group, icon: t.icon,
-    type: t.type, url: t.url, port: t.port, valid: t.valid, error: t.error,
+    type: t.type, url: t.url, port: t.port, valid: t.valid, error: t.error, hidden: !!t.hidden,
     status: manager.statusOf(t),
   };
 }
