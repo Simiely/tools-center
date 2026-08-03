@@ -22,7 +22,7 @@ jobs:
 
       - name: Clone wb-credits tool
         run: |
-          mkdir -p tools/wb-credits
+          rm -rf tools/wb-credits   # 清空旧目录(历史版本曾误提交 tool.json,导致 clone 到非空目录失败)
           git clone --depth 1 https://github.com/Simiely/workbuddy-credits-tool.git tools/wb-credits
           rm -rf tools/wb-credits/.git
 
