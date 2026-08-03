@@ -179,13 +179,13 @@ function statusTxt(t){
   if(st.status==="error") return "异常";
   return st.status || "停止";
 }
-// 点击卡片:link 型新标签页跳 url;app 型进入 /tool/<id>
+// 点击卡片:link 型新标签页跳 url;app 型进入 /tool/<id>/(带尾斜杠,保证相对路径解析正确)
 document.addEventListener("click", (e)=>{
   const card = e.target.closest(".card");
   if(!card) return;
   const t = (window.__tools||[]).find(x=>x.id===card.dataset.id);
   if(!t) return;
-  window.open(t.type==="link" ? t.url : "/tool/"+t.id, "_blank");
+  window.open(t.type==="link" ? t.url : "/tool/"+t.id+"/", "_blank");
 });
 
 // ---- 在线添加工具(极简:只填名称,其余自动;高级设置折叠) ----

@@ -30,6 +30,12 @@ const server = http.createServer(async (req, res) => {
   const body = () => new Promise((resolve) => { let s = ""; req.on("data", (c) => (s += c)); req.on("end", () => resolve(s)); });
   try {
     // ---- 工具路由:反代(app)/ 302(link) ----
+    // 规范化: /tool/<id> 无尾斜杠 → 301 到 /tool/<id>/
+    // (否则页面内相对路径 ./xxx 会解析到 /tool/xxx 而非 /tool/<id>/xxx,JS/资源 404)
+    if (/^\/tool\/[^/]+$/.test(url.pathname)) {
+      res.writeHead(301, { Location: url.pathname + "/" + (url.search || "") });
+      return res.end();
+    }
     if (url.pathname === "/tool" || url.pathname.startsWith("/tool/")) {
       proxyRequest(req, res, url);
       return;
