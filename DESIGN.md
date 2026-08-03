@@ -183,9 +183,7 @@ tools-center/
 
 1. **app 型**:在 `tools/` 下建目录 `<id>/`,拷入工具文件 + 写 `tool.json`;
 2. **link 型**:直接建 `tools/<id>/tool.json`,填 `type:"link"` + `url` 即可;
-3. 重启主程序(`docker restart tools-center`)或调 `/api/reload` → 首页自动出现。
-
-> 设计取舍:采用"重启/手动 reload"而非热扫描,换取实现简单与确定行为(轻量哲学)。
+3. **刷新首页即可自动发现**(`GET /api/tools` 访问即重扫 + 增量启动;`POST /api/reload` 仍可用,网页「＋ 添加工具」亦可在线创建)。
 
 ---
 
@@ -199,9 +197,9 @@ tools-center/
 |---|---|---|---|
 | `server.mjs` | 入口(薄层):读配置 → 组装各模块 → 启动 HTTP | `main()` | 全部 lib |
 | `lib/config.js` | 常量集中:主端口、工具端口段、健康间隔、日志保留天数、退避参数 | `CONFIG` | — |
-| `lib/registry.js` | 扫描 `tools/*/tool.json` → 校验字段/类型/端口冲突 → `Map<id, ToolSpec>`;区分 `app`/`link` 型;reload | `scanTools / reload / get / list` | config |
-| `lib/manager.js` | 进程托管(**仅 app 型**):spawn、退出自动拉起(指数退避 1s/2s/4s…封顶 30s)、优雅停止(SIGTERM→5s 后 SIGKILL)、健康检查轮询 | `startAll / start / stop / restart / status / healthCheck` | registry, config |
-| `lib/proxy.js` | 零依赖反向代理(**仅 app 型**):`/tool/<id>/*` 请求转发(流式透传、响应头改写、60s 超时、WebSocket 升级预留);**link 型返回 302 重定向到 url** | `createProxyHandler(registry)` | registry |
+| `lib/registry.js` | 扫描 `tools/*/tool.json` → 校验字段/类型/端口冲突 → `Map<id, ToolSpec>`;区分 `app`/`link` 型;**在线创建/删除**(自动补 id/分配端口/生成示例) | `scanTools / createTool / removeTool / get / list` | config |
+| `lib/manager.js` | 进程托管(**仅 app 型**):spawn、退出自动拉起(指数退避 1s/2s/4s…封顶 30s,连败 5 次停)、优雅停止(SIGTERM→5s 后 SIGKILL)、健康检查轮询;**运行状态存内部 run Map 与 spec 解耦**;删除前先 stop 防 EBUSY | `startAll / start / stop / restart / sync / statusOf` | registry, config |
+| `lib/proxy.js` | 零依赖反向代理(**仅 app 型**):`/tool/<id>/*` 请求转发(流式透传、**text/html 自动注入 `window.__BASE__`**、60s 超时、WebSocket 升级预留);**link 型返回 302 重定向到 url** | `proxyRequest` | registry |
 | `lib/logger.js` | 每工具 stdout/stderr → `data/logs/<id>.log`(按天滚动、保留 7 天)+ 内存环形缓冲(最近 200 行);仅 app 型有日志 | `attach(tool) / read(id, lines)` | config |
 
 路由(HTTP 层)由 `server.mjs` 持有,仅做"URL → 模块"的分发,不写业务逻辑:
@@ -209,9 +207,13 @@ tools-center/
 ```
 GET  /                    → public/index.html + 注册表 JSON
 GET  /tool/<id>[/...]     → proxy:app 型反代 / link 型 302 → url
-GET  /api/tools           → registry.list + manager.status
+GET  /tool/<id>           → 301 → /tool/<id>/(无尾斜杠规范化,保证相对路径正确)
+GET  /api/tools           → 访问即自动重扫 tools/ + manager.sync 增量(放目录刷新即出)
+POST /api/tools           → createTool(自动补 id/端口/示例)+ 启动(在线添加)
+DELETE /api/tools         → 先 stop 再删目录(在线删除)
 GET  /api/tools/<id>      → 单工具状态
 POST /api/tools/<id>/restart → manager.restart(link 型返回 400)
+POST /api/tools/<id>/upload → 上传文件/子目录到工具目录(防路径逃逸)
 POST /api/reload          → registry.reload + manager 增量拉起
 GET  /api/logs/<id>?lines → logger.read(link 型返回 400)
 ```
@@ -242,9 +244,9 @@ GET  /api/logs/<id>?lines → logger.read(link 型返回 400)
 - 原生 HTML/CSS/JS,深色粉红主题(与积分仪表盘视觉一致,`#ff9292` 系)
 - 结构:顶栏(标题 + 状态总览)→ 分组卡片网格
 - 每卡片:图标 / 名称 / 描述 / 状态点(绿=健康、黄=启动中、红=异常;link 型可配 health 探活)
-- 点击行为:**app 型** → 进入 `/tool/<id>`(新标签页);**link 型** → 卡片带"外部"小标记,点击直接新标签页打开 `url`
-- 打开时 `fetch(/api/tools)` 渲染;每 30s 轮询刷新状态点
-- 工具内嵌方式:新标签页打开(`/tool/<id>`)——iframe 有 X-Frame-Options 兼容问题,初期不做内嵌
+- 点击行为:**app 型** → 进入 `/tool/<id>/`(新标签页);**link 型** → 卡片带"外部"小标记,点击直接新标签页打开 `url`
+- 打开时 `fetch(/api/tools)` 渲染(访问即重扫,放目录刷新即出);**无自动轮询**,右上角手动刷新按钮(状态变化不频繁,轮询浪费)
+- 工具内嵌方式:新标签页打开(`/tool/<id>/`)——iframe 有 X-Frame-Options 兼容问题,初期不做内嵌
 
 ---
 
@@ -306,7 +308,7 @@ services:
 4. 启动工具中心 → 首页出现"积分仪表盘"卡片 → 点击进入 `/tool/wb-credits`;
 5. 云同步/导出 MD 等既有功能照常使用(工具本身无感知)。
 
-> 备注:edge-daemon(端口 9333)属于"添加账号"的辅助进程,建议由 `tool.json` 声明为第二个命令(初期手动机器人,或后续支持 `sidecars` 多命令)。
+> 备注:edge-daemon(HTTP API **8129**,端口段内)属于"添加账号"的辅助进程——**已实现为 app 工具托管**(`tools/edge-daemon/tool.json`,`cmd:["node","edge-daemon.mjs","8129"]`,`health:/status`,`restart:always`),平台自动拉起+崩溃自愈,无需手动启动。Edge 需以 `--remote-debugging-port=9222` 启动(daemon 用 CDP 标准发现 `/json/version` 连接)。
 
 ---
 

@@ -61,7 +61,7 @@
 | 3 | `lib/manager.js` | spawn、崩溃自动拉起(指数退避 1s→30s 封顶)、SIGTERM→5s→SIGKILL、健康轮询;**仅 app 型** | 杀子进程 → 自动拉起;健康状态正确 |
 | 4 | `lib/proxy.js` | 零依赖转发(流式/超时 60s);link 型 302;WebSocket 升级**预留接口** | 代理正常;`/tool/link` 302 |
 | 5 | `lib/logger.js` | stdout/stderr → 文件按天滚动 + 内存 200 行 | `/api/logs/<id>` 可取 |
-| 6 | `server.mjs` + `public/index.html` | 路由分发 + 首页卡片网格(深色粉红、状态点、30s 轮询、link 标记) | 首页正确渲染 |
+| 6 | `server.mjs` + `public/index.html` | 路由分发 + 首页卡片网格(深色粉红、状态点、手动刷新、link 标记)+ 301 尾斜杠规范化 | 首页正确渲染 |
 | 7 | 自测:mock 一个假工具(app)+ 一个 link | 全链路 | 见验收标准 |
 
 ### M2 接入积分仪表盘(0.5 天)

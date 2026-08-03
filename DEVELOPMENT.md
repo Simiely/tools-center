@@ -8,25 +8,28 @@
 Node 零依赖的"轻量工具统一宿主":个人写的各种轻量小工具以声明式(`tool.json`)接入,
 统一入口 + 子进程托管,常驻 NAS。核心哲学与 `workbuddy-credits-tool` 一致——**轻量到底、模块化、零依赖**。
 
-- 当前阶段:M0 完成(仓库 + 规划文档);M1 平台骨架待开发
-- 关键数字:主端口 `8080`、工具段 `8100~8199`、健康轮询 30s、代理超时 60s、日志保留 7 天、拉起退避 1s→30s
-- 首批工具:积分仪表盘(app)、微信读书购书工作台(app)、NAS 现有服务(link)
+- 当前阶段:M1 平台骨架 ✅ / M2 接入积分仪表盘 ✅ / 程序完整化(自助接入 + Docker + 指南)✅;M3 微信读书服务化 / M4 NAS 部署待做
+- 关键数字:主端口 `8080`(可 PORT 覆盖)、工具段 `8100~8199`、健康轮询 30s、代理超时 60s、日志保留 7 天、拉起退避 1s→30s(连败 5 次停)
+- 首批工具:积分仪表盘(app,已接入,含 edge-daemon 辅助进程托管)、NAS 现有服务(link)
+- 接入方式:①**放目录即出**(`tools/<id>/tool.json`,刷新页面自动发现并启动)②网页在线添加(填名称/传文件)③link 型一个 JSON 文件
 
 ## 二、架构说明(摘要)
 
 ```
-server.mjs(入口:组装 + 路由)
-├── lib/registry.js   扫描 tools/*/tool.json → Map<id, ToolSpec>(校验 type/端口)
-├── lib/manager.js    进程托管(app 型):spawn / 退避拉起 / SIGTERM→SIGKILL / 健康轮询
-├── lib/proxy.js      反代(app 型)/tool/<id>;link 型 302;WS 升级预留
+server.mjs(入口:组装 + 路由;对 /tool/<id> 无尾斜杠做 301 规范化)
+├── lib/registry.js   扫描 tools/*/tool.json → Map<id, ToolSpec>(校验 type/端口/冲突)
+│                     createTool/removeTool(在线增删,自动建目录/分配端口/生成示例)
+├── lib/manager.js    进程托管(app 型):spawn(状态与 spec 解耦)/ 退避拉起 / SIGTERM→SIGKILL / 健康轮询
+├── lib/proxy.js      反代(app 型)/tool/<id>;HTML 响应自动注入 __BASE__;link 型 302;WS 升级预留
 ├── lib/logger.js     stdout/stderr → data/logs/<id>.log(按天滚动)+ 内存 200 行
 └── lib/config.js     常量:端口/超时/间隔/退避参数
-public/index.html     首页:分组卡片网格、状态点、30s 轮询、link 标记
+public/index.html     首页:分组卡片网格、状态点、手动刷新(无轮询)、link 标记、＋添加工具/删除/上传
 ```
 
 - **单容器 + 子进程**:工具全是零依赖 Node,一个运行时全装下;不搞每工具一容器
 - **依赖单向**:`server.mjs → lib/*`,模块间不绕环;新能力以新模块接入
-- 完整设计(目录结构 / tool.json 规范 / Docker 化 / 安全):见 [`DESIGN.md`](DESIGN.md)
+- **GET /api/tools 访问即重扫**:放目录+tool.json → 刷新页面即出现并自动启动(manager.sync 增量:新增启动、删除停止)
+- 完整设计(目录结构 / tool.json 规范 / Docker 化 / 安全):见 [`DESIGN.md`](DESIGN.md);接入操作见 [`docs/使用指南.md`](docs/使用指南.md)
 
 ## 三、关键决策与方案
 
@@ -58,6 +61,41 @@ public/index.html     首页:分组卡片网格、状态点、30s 轮询、link 
 - 根因:功能面(HTTP 反代 + 子进程)用 `node:` 内置模块完全覆盖
 - 解决:纯原生实现;需要时(如认证)优先手写或再评估
 - 预防:任何新依赖必须论证必要性,默认拒绝
+
+## 问题:子路径挂载下工具 JS/API 全失效,平台怎么兜底?
+
+**TL;DR**:反代 HTML 时自动注入 `window.__BASE__="/tool/<id>"`,并规范 URL 尾斜杠;工具侧资源用相对路径、API 用 `__BASE__` 前缀。
+
+- 问题:带页面的工具在 `/tool/<id>/` 下,绝对路径 `/app.js`、`/api/*` 解析到平台根 → 404,按钮全失效(实测踩坑)
+- 根因:工具按独立站点编写,不知道自己的挂载前缀
+- 解决:① `proxy.js` 对 text/html 响应注入 `__BASE__`(重算 content-length、去 content-encoding);② `server.mjs` 对 `/tool/<id>`(无尾斜杠)301 到带斜杠,保证相对路径正确;③ 工具侧约定见 `docs/使用指南.md`「子路径挂载约定」
+- 预防:页面工具一律相对路径 + `__BASE__` 前缀;纯后端工具不受影响
+
+## 问题:为什么运行状态要存在 manager 内部,而非 ToolSpec 上?
+
+**TL;DR**:扫描重建 spec 是"纯配置",状态存别处才不会在 reload/在线增删时丢失。
+
+- 问题:曾出现"进程在跑但卡片显示 stopped"——状态存在旧 spec 对象上,`scanTools()` 重建后丢失
+- 根因:配置(注册表)与运行时状态(进程/健康/退避)生命周期不同
+- 解决:`lib/manager.js` 用内部 `run Map` 存状态,`ToolSpec` 只当纯配置;重扫/重建不影响运行
+- 预防:任何"配置即状态"的写法都要拆开
+
+## 问题:删除运行中的工具为什么报 EBUSY?
+
+**TL;DR**:Windows 下子进程占用目录,删除前必须先停进程。
+
+- 问题:`DELETE /api/tools/<id>` 删目录报 EBUSY(目录被占用)
+- 根因:工具子进程还活着,句柄占用目录
+- 解决:删除前 `manager.stop(t)`(SIGTERM → 5s → SIGKILL)再删
+- 预防:所有"删除目录"类操作,先确认相关进程已终止
+
+## 问题:添加工具怎么做到"只填一个名字"?
+
+**TL;DR**:后端补全缺失字段(id/端口/示例代码/命令),前端必填仅名称,高级字段折叠。
+
+- 问题:早期在线添加要填 10 个字段 + 记端口段 + 手动放代码,门槛太高
+- 解决:`createTool` 自动补全:id 未填自动生成、端口自动分配段内最小空闲、空目录自动生成可运行示例 + 默认 cmd;前端「＋ 添加工具」仅名称必填,「▸ 高级设置」折叠其余
+- 预防:交互设计先问"哪个字段真的需要用户操心"
 
 ## 四、每次改动的动作清单
 
