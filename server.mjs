@@ -1,5 +1,6 @@
 // server.mjs - Tools Center 入口(薄层):组装模块 + 路由分发
 // 启动: node server.mjs  (PORT 环境变量可改端口,默认 8080)
+import { execSync } from "node:child_process";
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -113,7 +114,15 @@ const server = http.createServer(async (req, res) => {
         if (dest !== root && !dest.startsWith(root + path.sep)) return json(400, { ok: false, error: "路径越界" });
         fs.mkdirSync(path.dirname(dest), { recursive: true });
         fs.writeFileSync(dest, Buffer.from(content, "binary"));
-        return json(200, { ok: true, path: target });
+        // zip 自动解压到目标目录,解压后删除压缩包
+        if (target.toLowerCase().endsWith(".zip")) {
+          const dir = path.dirname(dest);
+          try { execSync("unzip -o -q \"" + dest + "\" -d \"" + dir + "\"", { stdio: "pipe" }); } catch (e) {
+            fs.unlinkSync(dest); return json(400, { ok: false, error: "解压失败: " + e.message });
+          }
+          fs.unlinkSync(dest);
+        }
+        return json(200, { ok: true, path: target, unzipped: target.toLowerCase().endsWith(".zip") });
       }
       // JSON 模式(兼容旧)
       const j = JSON.parse((await body()) || "{}");

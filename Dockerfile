@@ -1,5 +1,8 @@
 FROM node:22-slim
 
+# zip 解压支持
+RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # 仅复制程序本体(工具目录 tools/ 与数据 data/ 是挂载卷,不打包)
