@@ -79,12 +79,25 @@ const server = http.createServer(async (req, res) => {
       const lines = Math.min(parseInt(url.searchParams.get("lines") || "200", 10) || 200, 1000);
       return json(200, { ok: true, id, lines: readLog(id, lines) });
     }
-    // /api/tools/<id> 与 /api/tools/<id>/restart
+    // /api/tools/<id> 与 /api/tools/<id>/restart、/upload
     if (url.pathname.startsWith("/api/tools/")) {
       const parts = url.pathname.split("/"); // ["","api","tools",id,maybe action]
       const id = decodeURIComponent(parts[3] || "");
       const t = getTool(id);
       if (!t) return json(404, { ok: false, error: "tool not found" });
+      // 上传代码/文件到工具目录(网页接入:填名称后把用户自己的程序放进去)
+      if (parts[4] === "upload" && req.method === "POST") {
+        let j;
+        try { j = JSON.parse((await body()) || "{}"); } catch { return json(400, { ok: false, error: "JSON 解析失败" }); }
+        const name = String(j.name || "").replace(/[\\/]/g, "_").trim();
+        if (!name || name === "." || name === ".." || name.includes("..")) return json(400, { ok: false, error: "非法文件名" });
+        try {
+          fs.writeFileSync(path.join(t.dir, name), String(j.content ?? ""), "utf8");
+          return json(200, { ok: true, name, hint: "文件已写入,重启工具生效" });
+        } catch (e) {
+          return json(500, { ok: false, error: e.message });
+        }
+      }
       if (parts[4] === "restart" && req.method === "POST") {
         if (t.type !== "app") return json(400, { ok: false, error: "link 型不支持重启" });
         await manager.restart(t);

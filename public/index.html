@@ -113,6 +113,7 @@ h1{font-size:17px;font-weight:500}
     </div>
   </div>
 </div>
+<input type="file" id="uploadInput" multiple hidden>
 <div class="toast" id="toast"></div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -158,7 +159,7 @@ function cardHtml(t){
     <div class="card-top"><span class="ic">${t.icon}</span><span class="tag ${tagCls}">${tagTxt}</span></div>
     <div class="card-name">${t.name}</div>
     <div class="card-desc">${t.desc || "—"}${err ? `<br><span style="color:var(--bad)">⚠ ${err}</span>` : ""}</div>
-    <div class="card-foot"><span><span class="dot ${dotCls}"></span>${statusTxt(t)}</span><span>${t.type==="app" ? ":"+t.port : ""}<button class="del-btn" title="删除工具" onclick="event.stopPropagation();delTool('${t.id}','${t.name}')">🗑</button></span></div>
+    <div class="card-foot"><span><span class="dot ${dotCls}"></span>${statusTxt(t)}</span><span>${t.type==="app" ? ":"+t.port : ""}${t.type==="app" ? `<button class="del-btn" title="上传代码文件" onclick="event.stopPropagation();uploadFiles('${t.id}')">⬆</button>` : ""}<button class="del-btn" title="删除工具" onclick="event.stopPropagation();delTool('${t.id}','${t.name}')">🗑</button></span></div>
   </div>`;
 }
 function statusTxt(t){
@@ -256,6 +257,33 @@ async function delTool(id, name){
     load();
   }catch(e){ toast("❌ "+e.message); }
 }
+
+// ---- 上传代码文件(网页接入:把用户自己的程序放进工具目录) ----
+let uploadTarget = "";
+function uploadFiles(id){
+  uploadTarget = id;
+  const input = $("uploadInput");
+  input.value = "";
+  input.click();
+}
+$("uploadInput").addEventListener("change", async (e)=>{
+  const files = [...(e.target.files||[])];
+  if(!files.length || !uploadTarget) return;
+  const t = (window.__tools||[]).find(x=>x.id===uploadTarget);
+  if(!t){ toast("❌ 工具不存在"); return; }
+  toast(`⬆ 上传 ${files.length} 个文件…`);
+  let ok = 0, fail = 0;
+  for(const f of files){
+    try{
+      const text = await f.text();
+      const j = await (await fetch(`/api/tools/${uploadTarget}/upload`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ name: f.name, content: text }) })).json();
+      if(j.ok) ok++; else fail++;
+    }catch{ fail++; }
+  }
+  if(ok){ toast(`✅ 已上传 ${ok} 个文件,重启生效`); await fetch(`/api/tools/${uploadTarget}/restart`, { method:"POST" }); load(); }
+  else toast("❌ 上传失败");
+  uploadTarget = "";
+});
 document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeAdd(); });
 
 load();
