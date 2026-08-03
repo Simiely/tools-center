@@ -92,7 +92,14 @@ h1{font-size:17px;font-weight:500}
       <div class="frow"><label>目标地址(url)</label><input id="fUrl" placeholder="http://192.168.1.100:8096" autocomplete="off"></div>
     </div>
     <div id="fAppRows">
-      <div class="tip" style="font-size:12px;color:var(--sub);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:12px">端口自动分配 · 自动生成可运行示例,<b>保存即能用</b>;之后替换 tools/&lt;id&gt;/server.mjs 就变成你的工具</div>
+      <div class="tip" style="font-size:12px;color:var(--sub);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:12px">端口自动分配 · 自动生成可运行示例。<b>也可以直接选你的代码文件一起上传</b>,保存即生效</div>
+      <div class="frow"><label>代码文件(可选,可多选)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn ghost" onclick="pickFiles()">📁 选择文件</button>
+          <span style="font-size:12px;color:var(--faint)" id="fFileCount">未选择</span>
+        </div>
+        <div class="preview" id="fFileList" style="margin-top:6px;min-height:0">不选则使用自动生成的示例 server.mjs</div>
+      </div>
     </div>
     <button class="btn ghost" id="advBtn" onclick="toggleAdv()">▸ 高级设置(可选)</button>
     <div id="fAdv" style="display:none;margin-top:10px">
@@ -114,6 +121,7 @@ h1{font-size:17px;font-weight:500}
   </div>
 </div>
 <input type="file" id="uploadInput" multiple hidden>
+<input type="file" id="fFileInput" multiple hidden>
 <div class="toast" id="toast"></div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -181,6 +189,7 @@ document.addEventListener("click", (e)=>{
 // ---- 在线添加工具(极简:只填名称,其余自动;高级设置折叠) ----
 let addType = "app";
 let advOpen = false;
+let selFiles = []; // 创建时一并上传的文件
 function openAdd(){ $("addMask").classList.add("show"); updatePreview(); }
 function closeAdd(){ $("addMask").classList.remove("show"); }
 function toggleAdv(){
@@ -235,6 +244,24 @@ function updatePreview(){
   const el = document.getElementById(id);
   if(el) el.addEventListener("input", updatePreview);
 });
+function pickFiles(){ $("fFileInput").value=""; $("fFileInput").click(); }
+$("fFileInput").addEventListener("change", (e)=>{
+  selFiles = [...(e.target.files||[])];
+  $("fFileCount").textContent = selFiles.length ? `已选 ${selFiles.length} 个` : "未选择";
+  $("fFileList").textContent = selFiles.length ? selFiles.map(f=>f.name).join("\n") : "不选则使用自动生成的示例 server.mjs";
+});
+async function uploadFilesTo(id, files){
+  let ok = 0;
+  for(const f of files){
+    try{
+      const text = await f.text();
+      const j = await (await fetch(`/api/tools/${id}/upload`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ name: f.name, content: text }) })).json();
+      if(j.ok) ok++;
+    }catch{}
+  }
+  if(ok) await fetch(`/api/tools/${id}/restart`, { method:"POST" });
+  return ok;
+}
 async function saveAdd(){
   const spec = collectSpec();
   if(!spec.name){ toast("⚠️ 请填写工具名称"); return; }
@@ -242,9 +269,15 @@ async function saveAdd(){
   try{
     const j = await (await fetch("/api/tools", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(spec) })).json();
     if(!j.ok) throw new Error(j.error||"创建失败");
+    const id = j.tool && j.tool.id;
+    let uploaded = 0;
+    if(spec.type==="app" && id && selFiles.length) uploaded = await uploadFilesTo(id, selFiles);
     closeAdd();
-    ["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach((id)=>{ const el=document.getElementById(id); if(el) el.value=""; });
-    toast(spec.type==="app" ? "✅ 已创建并运行(自动生成示例,可替换)" : "✅ 链接已添加");
+    ["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach((x)=>{ const el=document.getElementById(x); if(el) el.value=""; });
+    selFiles = []; $("fFileCount").textContent = "未选择"; $("fFileList").textContent = "不选则使用自动生成的示例 server.mjs";
+    toast(spec.type==="link" ? "✅ 链接已添加"
+      : uploaded ? `✅ 已创建并上传 ${uploaded} 个文件,已启动`
+      : "✅ 已创建并运行(自动生成示例)");
     load();
   }catch(e){ toast("❌ "+e.message); }
 }
