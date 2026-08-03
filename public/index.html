@@ -87,20 +87,26 @@ h1{font-size:17px;font-weight:500}
       <button id="ftApp" class="on" onclick="setType('app')">app · 托管进程</button>
       <button id="ftLink" onclick="setType('link')">link · 外部跳转</button>
     </div>
-    <div class="frow"><label>id(唯一,小写字母数字-)</label><input id="fId" placeholder="my-tool"></div>
-    <div class="frow"><label>名称</label><input id="fName" placeholder="我的工具"></div>
-    <div class="frow"><label>描述</label><input id="fDesc" placeholder="一句话说明(可选)"></div>
-    <div class="frow"><label>分组</label><input id="fGroup" placeholder="工具" value="工具"></div>
-    <div class="frow"><label>图标(emoji)</label><input id="fIcon" placeholder="🧰" value="🧰"></div>
-    <div id="fAppRows">
-      <div class="frow"><label>启动命令(cmd)</label><input id="fCmd" placeholder='["node","server.mjs","8130"]'></div>
-      <div class="frow"><label>端口(8100~8199)</label><input id="fPort" type="number" placeholder="8130" min="8100" max="8199"></div>
-      <div class="frow"><label>健康检查路径(可选)</label><input id="fHealth" placeholder="/api/health"></div>
-    </div>
+    <div class="frow"><label>名称(必填)</label><input id="fName" placeholder="我的工具" autocomplete="off"></div>
     <div id="fLinkRows" style="display:none">
-      <div class="frow"><label>目标地址(url)</label><input id="fUrl" placeholder="http://192.168.1.100:8096"></div>
+      <div class="frow"><label>目标地址(url)</label><input id="fUrl" placeholder="http://192.168.1.100:8096" autocomplete="off"></div>
     </div>
-    <div class="frow"><label>tool.json 预览</label><div class="preview" id="fPreview">{ }</div></div>
+    <div id="fAppRows">
+      <div class="tip" style="font-size:12px;color:var(--sub);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:12px">端口自动分配 · 自动生成可运行示例,<b>保存即能用</b>;之后替换 tools/&lt;id&gt;/server.mjs 就变成你的工具</div>
+    </div>
+    <button class="btn ghost" id="advBtn" onclick="toggleAdv()">▸ 高级设置(可选)</button>
+    <div id="fAdv" style="display:none;margin-top:10px">
+      <div class="frow"><label>id(留空自动生成)</label><input id="fId" placeholder="自动" autocomplete="off"></div>
+      <div class="frow"><label>描述</label><input id="fDesc" placeholder="一句话说明(可选)" autocomplete="off"></div>
+      <div class="frow"><label>分组</label><input id="fGroup" placeholder="工具" value="工具"></div>
+      <div class="frow"><label>图标(emoji)</label><input id="fIcon" placeholder="🧰" value="🧰"></div>
+      <div id="fAdvApp">
+        <div class="frow"><label>启动命令 cmd(JSON,可选)</label><input id="fCmd" placeholder='留空自动: ["node","server.mjs","端口"]'></div>
+        <div class="frow"><label>端口(留空自动分配)</label><input id="fPort" type="number" placeholder="自动" min="8100" max="8199"></div>
+        <div class="frow"><label>健康检查路径(可选)</label><input id="fHealth" placeholder="/health"></div>
+      </div>
+    </div>
+    <div class="frow" id="fPreviewRow"><label>tool.json 预览</label><div class="preview" id="fPreview">{ }</div></div>
     <div class="facts">
       <button class="btn ghost" onclick="closeAdd()">取消</button>
       <button class="btn" onclick="saveAdd()">保存并启用</button>
@@ -171,59 +177,73 @@ document.addEventListener("click", (e)=>{
   window.open(t.type==="link" ? t.url : "/tool/"+t.id, "_blank");
 });
 
-// ---- 在线添加工具 ----
+// ---- 在线添加工具(极简:只填名称,其余自动;高级设置折叠) ----
 let addType = "app";
+let advOpen = false;
 function openAdd(){ $("addMask").classList.add("show"); updatePreview(); }
 function closeAdd(){ $("addMask").classList.remove("show"); }
+function toggleAdv(){
+  advOpen = !advOpen;
+  $("fAdv").style.display = advOpen ? "" : "none";
+  $("advBtn").textContent = (advOpen ? "▾" : "▸") + " 高级设置(可选)";
+  updatePreview();
+}
 function setType(t){
   addType = t;
   $("ftApp").classList.toggle("on", t==="app");
   $("ftLink").classList.toggle("on", t==="link");
   $("fAppRows").style.display = t==="app" ? "" : "none";
   $("fLinkRows").style.display = t==="link" ? "" : "none";
+  $("fAdvApp").style.display = t==="app" ? "" : "none";
   updatePreview();
 }
 function collectSpec(){
-  const spec = {
-    id: ($("fId").value||"").trim(),
-    name: ($("fName").value||"").trim(),
-    desc: ($("fDesc").value||"").trim(),
-    group: ($("fGroup").value||"工具").trim(),
-    icon: ($("fIcon").value||"🧰").trim(),
-    type: addType,
+  const spec = { name: ($("fName").value||"").trim(), type: addType };
+  if(addType==="link") spec.url = ($("fUrl").value||"").trim();
+  // 高级设置:填了才带上(空值让后端自动补全)
+  const adv = {
+    id: $("fId").value.trim(), desc: $("fDesc").value.trim(), group: $("fGroup").value.trim(),
+    icon: $("fIcon").value.trim(), cmd: $("fCmd").value.trim(), port: $("fPort").value.trim(),
+    health: $("fHealth").value.trim(),
   };
-  if(addType==="link"){
-    spec.url = ($("fUrl").value||"").trim();
-  }else{
-    let cmd = [];
-    try { const c = JSON.parse($("fCmd").value||"[]"); if(Array.isArray(c)) cmd = c; } catch {}
-    spec.cmd = cmd;
-    spec.port = parseInt($("fPort").value||"0",10) || undefined;
-    const h = ($("fHealth").value||"").trim();
-    if(h) spec.health = h;
+  if(adv.id) spec.id = adv.id;
+  if(adv.desc) spec.desc = adv.desc;
+  if(adv.group && adv.group !== "工具") spec.group = adv.group;
+  if(adv.icon && adv.icon !== "🧰") spec.icon = adv.icon;
+  if(addType==="app"){
+    if(adv.cmd){ try { const c = JSON.parse(adv.cmd); if(Array.isArray(c)) spec.cmd = c; } catch {} }
+    if(adv.port) spec.port = parseInt(adv.port, 10);
+    if(adv.health) spec.health = adv.health;
   }
   return spec;
 }
 function updatePreview(){
   const spec = collectSpec();
-  $("fPreview").textContent = JSON.stringify(spec, null, 2);
+  const p = {...spec};
+  if(advOpen || (addType==="link" && !p.url)) {
+    $("fPreview").textContent = JSON.stringify(p, null, 2);
+  } else {
+    // 极简模式:显示"自动补全"说明
+    $("fPreview").textContent =
+      (addType==="app"
+        ? "id 自动生成 · 端口自动分配\ncmd 自动: [\"node\",\"server.mjs\",\"端口\"]\n并自动生成可运行的 server.mjs"
+        : "id 自动生成") + "\n发送: " + JSON.stringify(p);
+  }
 }
-["fId","fName","fDesc","fGroup","fIcon","fCmd","fPort","fHealth","fUrl"].forEach((id)=>{
+["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach((id)=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener("input", updatePreview);
 });
 async function saveAdd(){
   const spec = collectSpec();
-  if(!spec.id || !spec.name){ toast("⚠️ 请填写 id 和名称"); return; }
+  if(!spec.name){ toast("⚠️ 请填写工具名称"); return; }
   if(spec.type==="link" && !/^https?:\/\//.test(spec.url||"")){ toast("⚠️ link 型需 http(s) 地址"); return; }
-  if(spec.type==="app" && (!Array.isArray(spec.cmd)||!spec.cmd.length)){ toast("⚠️ app 型需启动命令"); return; }
-  if(spec.type==="app" && !spec.port){ toast("⚠️ app 型需端口(8100~8199)"); return; }
   try{
     const j = await (await fetch("/api/tools", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(spec) })).json();
     if(!j.ok) throw new Error(j.error||"创建失败");
     closeAdd();
-    ["fId","fName","fDesc","fCmd","fPort","fHealth","fUrl"].forEach((id)=>{ const el=document.getElementById(id); if(el) el.value=""; });
-    toast("✅ 工具已添加并启用");
+    ["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach((id)=>{ const el=document.getElementById(id); if(el) el.value=""; });
+    toast(spec.type==="app" ? "✅ 已创建并运行(自动生成示例,可替换)" : "✅ 链接已添加");
     load();
   }catch(e){ toast("❌ "+e.message); }
 }
