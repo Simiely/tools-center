@@ -33,9 +33,9 @@ jobs:
             "id": "wb-credits",
             "name": "WorkBuddy 积分",
             "type": "app",
-            "cmd": ["node", "wb-gui.mjs"],
+            "cmd": ["node", "wb-gui.mjs", "8123"],
             "port": 8123,
-            "health": "/api/status",
+            "health": "/",
             "description": "多账号积分采集与可视化"
           }
           JSON
