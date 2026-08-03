@@ -1,15 +1,54 @@
 services:
-  tools-center:
+  web:
+    # 预先构建并推送到镜像仓库的镜像（push main 自动构建，见 .github/workflows/docker-build.yml）。
+    # 标签固定为 :main（随 main 分支更新）。
     image: ghcr.io/simiely/tools-center:main
     container_name: tools-center
+    # Dockerfile 默认用非 root 用户 node，但 SQLite/挂载卷权限在 host mount 下
+    # 可能报权限问题。家庭内网部署用 root 运行最简单可靠。
+    user: root
     ports:
-      - "8080:8080"
-    volumes:
-      # 工具目录(挂载:添加工具 = 往这里放 tool.json,或用网页在线添加)
-      - ./tools:/app/tools
-      # 运行时数据(日志等)
-      - ./data:/app/data
+      # 主程序端口：http://<NAS-IP>:2512
+      - "2512:8080"
+      # 如需直连工具端口段（如 wb-credits 8123），取消注释：
+      # - "8123:8123"
+      # - "8129:8129"
     environment:
+      # 主程序端口（容器内 8080，镜像默认值，无需改）
       - PORT=8080
-      - TZ=Asia/Shanghai
+      # 管理员密码：首次访问网页时设置（存储为 sha256，不落明文）。
+      # 不设环境变量也行——首次打开页面会弹窗引导设置。
+      # - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+    volumes:
+      # 工具目录：挂载后可手动新增工具（tools/<id>/ + tool.json），
+      # 也可用网页「+ 添加」在线创建。首次启动前需放入内置工具，见下方 init 服务。
+      - /mnt/usb2/Configs/tools-center/tools:/app/tools
+      # 运行时数据：管理员密码 hash、日志等
+      - /mnt/usb2/Configs/tools-center/data:/app/data
     restart: unless-stopped
+    # Dpanel "更新" = restart，不加 pull_policy 不拉新镜像
+    pull_policy: always
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/tools').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # 一次性初始化：首次部署时把内置工具（wb-credits 等）clone 进挂载的 tools/。
+  # 运行一次后此服务即退出（restart: "no"），后续更新工具用「git pull」或网页在线添加。
+  init:
+    image: alpine/git:latest
+    container_name: tools-center-init
+    volumes:
+      - /mnt/usb2/Configs/tools-center/tools:/tools
+    command: >
+      sh -c "
+        mkdir -p /tools/wb-credits &&
+        if [ ! -f /tools/wb-credits/tool.json ]; then
+          git clone --depth 1 https://github.com/Simiely/workbuddy-credits-tool.git /tmp/wb-credits &&
+          cp -r /tmp/wb-credits/. /tools/wb-credits/ &&
+          rm -rf /tools/wb-credits/.git /tmp/wb-credits
+        fi
+      "
+    restart: "no"
