@@ -1,0 +1,16 @@
+# ===== 运行时数据 =====
+data/
+*.log
+*.log.err
+
+# ===== 工具凭证/敏感(严禁上传) =====
+tools/*/wb-accounts.json
+tools/*/wb-sync.json
+tools/*/wb-history.json
+tools/*/wb-last-data.json
+tools/*/data/
+
+# ===== 系统 =====
+.DS_Store
+Thumbs.db
+node_modules/
