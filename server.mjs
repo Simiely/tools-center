@@ -35,7 +35,10 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     // ---- API ----
+    // 工具列表:每次请求自动重扫 tools/ 目录(放目录+tool.json → 刷新即出现并自动启动)
     if (url.pathname === "/api/tools" && req.method === "GET") {
+      scanTools();      // 发现新增/修改/删除的工具目录
+      manager.sync();   // 增量:新增的启动,被删的停止
       return json(200, { ok: true, tools: listTools().map(publicTool) });
     }
     // 在线创建工具(自助接入):body = tool.json 完整内容

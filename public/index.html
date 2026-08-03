@@ -137,7 +137,7 @@ async function load(){
     const appN = tools.filter(t=>t.type==="app").length;
     const linkN = tools.filter(t=>t.type==="link").length;
     const downN = tools.filter(t=>t.status&&t.status.status==="error").length;
-    $("meta").textContent = "共 " + tools.length + " 个工具 · 点右上角刷新状态";
+    $("meta").textContent = "共 " + tools.length + " 个工具 · 把工具目录放进 tools/ 后点刷新即自动发现 · 点右上角刷新状态";
     $("stats").innerHTML =
       `<button class="btn ghost" onclick="openAdd()">＋ 添加工具</button>` +
       `<button class="btn" onclick="load()">刷新</button>` +
