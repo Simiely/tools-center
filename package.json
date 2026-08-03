@@ -1,0 +1,10 @@
+{
+  "name": "tools-center",
+  "version": "0.2.0",
+  "description": "Node 零依赖的轻量工具统一宿主:声明式接入(tool.json)、统一入口、进程托管",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

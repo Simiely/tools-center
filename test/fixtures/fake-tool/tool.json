@@ -1,0 +1,12 @@
+{
+  "id": "fake-tool",
+  "name": "假工具 · 框架自测",
+  "desc": "M1 骨架验证用:回显请求路径",
+  "group": "测试",
+  "icon": "🧪",
+  "type": "app",
+  "cmd": ["node", "server.mjs", "8123"],
+  "cwd": ".",
+  "port": 8123,
+  "health": "/health"
+}

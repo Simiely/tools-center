@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tools Center · 工具中心</title>
+<style>
+:root{
+  --bg:#171a1f;--card:#1f242b;--card2:#242a33;--text:#e6e8eb;--sub:#9aa1ab;--faint:#6b7280;
+  --line:#2d333c;--brand:#ff9292;--brand-soft:rgba(255,146,146,.14);
+  --ok:#3dd68c;--warn:#f7a35c;--bad:#f76560;
+  --grad:linear-gradient(135deg,#ff9292,#ff7aa2);
+  --r-lg:16px;--r-md:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.6;min-height:100vh;padding:16px}
+.wrap{max-width:1080px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border-radius:11px;background:var(--grad);display:grid;place-items:center;color:#2d1a1a;font-weight:900;font-size:15px}
+h1{font-size:17px;font-weight:500}
+.meta{font-size:12px;color:var(--faint)}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:12px;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;display:flex;flex-direction:column;gap:8px}
+.card:hover{transform:translateY(-2px);border-color:rgba(255,146,146,.4)}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--grad);opacity:.7}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ic{font-size:22px}
+.tag{font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--sub);white-space:nowrap}
+.tag.app{color:var(--brand);border-color:rgba(255,146,146,.4);background:var(--brand-soft)}
+.tag.link{color:var(--ok);border-color:rgba(61,214,140,.35);background:rgba(61,214,140,.1)}
+.card-name{font-size:14px;font-weight:500}
+.card-desc{font-size:12px;color:var(--sub);min-height:32px;word-break:break-all}
+.card-foot{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--faint)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.dot.ok{background:var(--ok)}
+.dot.down{background:var(--bad)}
+.dot.unknown{background:var(--warn)}
+.dot.running{background:var(--ok)}
+.empty{color:var(--faint);text-align:center;padding:60px 0}
+.empty .big{font-size:34px;margin-bottom:8px}
+.group{margin-bottom:22px}
+.group-title{font-size:13px;color:var(--sub);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.group-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.invalid{border-color:rgba(247,101,96,.4)}
+.invalid .card-name{color:var(--bad)}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);color:var(--text);padding:9px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.toast.show{opacity:.97}
+@media(max-width:560px){.grid{grid-template-columns:1fr 1fr}.card-desc{min-height:auto}}
+@media(max-width:380px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo">TC</div><div><h1>Tools Center · 工具中心</h1><div class="meta" id="meta">加载中…</div></div></div>
+    <div class="stats" id="stats"></div>
+  </header>
+  <main id="main"><div class="empty"><div class="big">⌛</div>加载中…</div></main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2600); }
+
+async function load(){
+  try{
+    const j = await (await fetch("/api/tools", { cache:"no-store" })).json();
+    if(!j.ok) throw new Error(j.error||"加载失败");
+    const tools = j.tools || [];
+    const appN = tools.filter(t=>t.type==="app").length;
+    const linkN = tools.filter(t=>t.type==="link").length;
+    const downN = tools.filter(t=>t.status&&t.status.status==="error").length;
+    $("meta").textContent = "共 " + tools.length + " 个工具 · 状态每 30 秒刷新";
+    $("stats").innerHTML =
+      `<span class="chip">🧰 ${tools.length} 工具</span>` +
+      `<span class="chip">📦 ${appN} 托管</span>` +
+      `<span class="chip">🔗 ${linkN} 链接</span>` +
+      (downN ? `<span class="chip" style="color:var(--bad)">⚠️ ${downN} 异常</span>` : `<span class="chip" style="color:var(--ok)">✅ 全部正常</span>`);
+    render(tools);
+  }catch(e){ $("main").innerHTML = `<div class="empty"><div class="big">❌</div>${e.message}</div>`; }
+}
+
+function render(tools){
+  if(!tools.length){ $("main").innerHTML = '<div class="empty"><div class="big">🧰</div>暂无工具<br>在 tools/ 目录下放一个 tool.json 即可</div>'; return; }
+  const groups = {};
+  for(const t of tools) (groups[t.group] = groups[t.group]||[]).push(t);
+  window.__tools = tools; // 供点击委托查 url
+  $("main").innerHTML = Object.entries(groups).map(([g, arr]) => `
+    <div class="group"><div class="group-title">${g}</div><div class="grid">${arr.map(cardHtml).join("")}</div></div>`).join("");
+}
+
+function cardHtml(t){
+  const st = t.status || {};
+  const dotCls = t.type==="link" ? "unknown" : (st.status==="running" ? "running" : (st.status==="error" ? "down" : "unknown"));
+  const tagCls = t.type==="app" ? "app" : "link";
+  const tagTxt = t.type==="app" ? "托管" : "链接";
+  const invalid = !t.valid ? " invalid" : "";
+  const err = t.error || st.error || "";
+  return `<div class="card${invalid}" data-id="${t.id}">
+    <div class="card-top"><span class="ic">${t.icon}</span><span class="tag ${tagCls}">${tagTxt}</span></div>
+    <div class="card-name">${t.name}</div>
+    <div class="card-desc">${t.desc || "—"}${err ? `<br><span style="color:var(--bad)">⚠ ${err}</span>` : ""}</div>
+    <div class="card-foot"><span><span class="dot ${dotCls}"></span>${statusTxt(t)}</span><span>${t.type==="app" ? ":"+t.port : ""}</span></div>
+  </div>`;
+}
+function statusTxt(t){
+  const st = t.status || {};
+  if(t.type==="link") return st.status==="invalid" ? "配置无效" : "外部链接";
+  if(st.status==="running") return st.health==="ok" ? "运行中 · 健康" : (st.health==="down" ? "运行中 · 异常" : "运行中");
+  if(st.status==="error") return "异常";
+  return st.status || "停止";
+}
+// 点击卡片:link 型新标签页跳 url;app 型进入 /tool/<id>
+document.addEventListener("click", (e)=>{
+  const card = e.target.closest(".card");
+  if(!card) return;
+  const t = (window.__tools||[]).find(x=>x.id===card.dataset.id);
+  if(!t) return;
+  window.open(t.type==="link" ? t.url : "/tool/"+t.id, "_blank");
+});
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>

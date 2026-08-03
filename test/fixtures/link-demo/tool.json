@@ -1,0 +1,9 @@
+{
+  "id": "link-demo",
+  "name": "链接示例 · 外部服务",
+  "desc": "M1 验证 link 型:302 跳转到外部地址",
+  "group": "测试",
+  "icon": "🔗",
+  "type": "link",
+  "url": "https://example.com"
+}

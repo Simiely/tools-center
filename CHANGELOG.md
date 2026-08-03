@@ -2,6 +2,29 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.2.0 (2026-08-03) · M1 平台骨架
+
+**工具中心可运行:扫描注册表 → 托管子进程 → 统一入口。**
+
+### 新增
+- `lib/` 五模块:
+  - `config.js`:常量集中(端口/端口段/超时/退避/日志保留)
+  - `registry.js`:扫描 `tools/*/tool.json` → 注册表;校验 id/type/url/cmd/port、端口段、**端口冲突检测**
+  - `manager.js`:进程托管(app 型)——spawn、崩溃**指数退避自动拉起**(1s→30s,连败 5 次停)、优雅停止(SIGTERM→5s→SIGKILL)、健康检查轮询
+  - `proxy.js`:零依赖反向代理(`/tool/<id>/*`,流式透传,60s 超时);link 型 **302 跳转**
+  - `logger.js`:子进程 stdout/stderr → 文件(按天滚动,保留 7 天)+ 内存 200 行
+- `server.mjs` 入口:路由分发(首页 / `/tool/*` / `/api/tools` / `/api/reload` / `/api/logs` / restart)
+- `public/index.html` 首页:分组卡片网格、状态点(健康/异常)、托管/链接标记、30s 轮询
+- `package.json`(ESM 零依赖)+ 测试夹具 `test/fixtures/`(fake-tool / link-demo)
+
+### 修复
+- 子进程 `cmd[0]==="node"` 时用中心自身的 `process.execPath`(避免依赖 PATH 导致 ENOENT 反复重启)
+
+### 验证(M1 验收全通过)
+- 注册表:app/link 双类型、端口冲突标记无效工具 ✓
+- 托管:fake-tool `running + health ok` ✓;**杀掉进程 2.5s 内自动拉回** ✓
+- 反代 `/tool/fake-tool/*` ✓;link 302 ✓;404 ✓;日志聚合 ✓;首页渲染 ✓
+
 ## v0.1.0 (2026-08-03) · 规划阶段
 
 **首版,建立项目基础。**
