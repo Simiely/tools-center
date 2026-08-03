@@ -52,8 +52,8 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .card-foot{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text3);margin-top:auto}
 .card-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 .card-dot.ok{background:var(--ok)} .card-dot.warn{background:var(--warn)} .card-dot.bad{background:var(--bad)}
-.del-btn{position:absolute;bottom:4px;right:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:var(--r2);opacity:0;transition:.15s}
-.card:hover .del-btn{opacity:1}
+.del-btn{position:absolute;bottom:4px;right:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:var(--r2);opacity:.7;transition:.15s}
+.card:hover .del-btn,.del-btn:focus-visible{opacity:1}
 .del-btn:hover{color:var(--bad);background:#f8717114}
 
 @media(min-width:500px){
