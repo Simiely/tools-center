@@ -1,7 +1,6 @@
 services:
   tools-center:
-    build: .
-    image: tools-center:latest
+    image: ghcr.io/simiely/tools-center:main
     container_name: tools-center
     ports:
       - "8080:8080"
