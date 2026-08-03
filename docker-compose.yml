@@ -19,6 +19,13 @@ services:
       # 管理员密码：首次访问网页时设置（存储为 sha256，不落明文）。
       # 不设环境变量也行——首次打开页面会弹窗引导设置。
       # - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+    # 关键：绕过路由器上的 Clash fake-ip DNS（198.18.x.x 假地址）。
+    # 若 iStoreOS/OpenWrt 开了 fake-ip 模式，容器默认 DNS 会拿到假 IP，
+    # 容器直连假 IP 必然超时（workbuddy 查询 8s 超时即此因）。
+    # 指定公共 DNS 让容器解析到真实 IP 直连。
+    dns:
+      - 223.5.5.5
+      - 119.29.29.29
     volumes:
       # 工具目录：挂载后可手动新增工具（tools/<id>/ + tool.json），
       # 也可用网页「+ 添加」在线创建。首次启动前需放入内置工具，见下方 init 服务。
