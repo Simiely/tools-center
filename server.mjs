@@ -185,7 +185,15 @@ const server = http.createServer(async (req, res) => {
           catch (e) { try { fs.unlinkSync(dest); } catch {} return json(400, { ok: false, error: e.message }); }
           try { fs.unlinkSync(dest); } catch { /* 删除失败不阻塞(沙箱/只读卷下 zip 残留无害) */ }
         }
-        return json(200, { ok: true, path: realPath, unzipped: isZip });
+        // zip 解压后:若目标是 tools/<id>/ 下的工具,自动重启让新代码/新 tool.json 生效。
+        // (否则旧进程继续跑旧配置,registry 已更新,反代按新端口转发必现"上游不可达")
+        const tid = isZip ? (realPath.match(/^tools\/([^/]+)\//) || [])[1] : "";
+        if (tid) {
+          scanTools(); // 必须先刷新 registry:解压已覆盖 tool.json,内存 Map 仍是旧配置
+          const t = getTool(tid);
+          if (t && t.type === "app") { try { await manager.restart(t); } catch { /* 重启失败不阻塞上传响应 */ } }
+        }
+        return json(200, { ok: true, path: realPath, unzipped: isZip, restarted: !!tid });
       }
       // JSON 模式(兼容旧)
       const j = JSON.parse((await body()) || "{}");
