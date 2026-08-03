@@ -2,329 +2,306 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Tools Center · 工具中心</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tools Center</title>
 <style>
 :root{
-  --bg:#171a1f;--card:#1f242b;--card2:#242a33;--text:#e6e8eb;--sub:#9aa1ab;--faint:#6b7280;
-  --line:#2d333c;--brand:#ff9292;--brand-soft:rgba(255,146,146,.14);
-  --ok:#3dd68c;--warn:#f7a35c;--bad:#f76560;
-  --grad:linear-gradient(135deg,#ff9292,#ff7aa2);
-  --r-lg:16px;--r-md:12px;
+  --bg:#0a0d11; --surface:#13171e; --card:#1a1f29; --card-hover:#1f2530;
+  --text:#eeeeee; --text2:#959da8; --text3:#5a6270;
+  --line:#20262f; --line2:#2d3540;
+  --brand:#ff7043; --brand-dim:#ff70431a;
+  --ok:#4ade80; --warn:#facc15; --bad:#f87171;
+  --r2:6px; --r3:10px; --r4:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.6;min-height:100vh;padding:16px}
-.wrap{max-width:1080px;margin:0 auto}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px}
-.logo{width:38px;height:38px;border-radius:11px;background:var(--grad);display:grid;place-items:center;color:#2d1a1a;font-weight:900;font-size:15px}
-h1{font-size:17px;font-weight:500}
-.meta{font-size:12px;color:var(--faint)}
-.stats{display:flex;gap:8px;flex-wrap:wrap}
-.chip{font-size:12px;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
-.btn{font-size:12px;color:#2d1a1a;background:var(--grad);border:none;border-radius:999px;padding:4px 14px;font-weight:500;cursor:pointer}
-.btn:hover{opacity:.9}
-.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
-.btn.ghost:hover{border-color:rgba(255,146,146,.4)}
-.del-btn{font-size:12px;color:var(--faint);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:6px}
-.del-btn:hover{color:var(--bad);background:rgba(247,101,96,.1)}
-.mask{position:fixed;inset:0;background:rgba(10,12,16,.6);display:none;align-items:center;justify-content:center;z-index:80;padding:16px}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+.header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.header-inner{max-width:1200px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;border-radius:var(--r2);background:linear-gradient(135deg,var(--brand),#ff5722);display:grid;place-items:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0}
+.logo-text{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.logo-text span{color:var(--text3);font-weight:400;margin-left:4px;font-size:12px}
+.hdr-acts{display:flex;align-items:center;gap:8px}
+.hdr-stat{font-size:11px;color:var(--text2);border-right:1px solid var(--line);padding-right:8px;display:none}
+@media(min-width:600px){.hdr-stat{display:block}}
+
+.tabs{position:sticky;top:56px;z-index:40;background:var(--bg);border-bottom:1px solid var(--line)}
+.tabs-inner{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs-inner::-webkit-scrollbar{display:none}
+.tab{padding:10px 16px;font-size:12px;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s;flex-shrink:0}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+
+.main{max-width:1200px;margin:0 auto;padding:16px 8px 60px}
+@media(min-width:500px){.main{padding:20px}}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+@media(min-width:500px){.grid{gap:10px}}
+@media(min-width:768px){.grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r3);padding:10px 6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;transition:.18s;position:relative;overflow:hidden}
+.card:hover{background:var(--card-hover);border-color:var(--line2);transform:translateY(-1px)}
+.card:active{transform:translateY(0)}
+.card-icon{width:36px;height:36px;border-radius:10px;background:var(--surface);display:grid;place-items:center;font-size:20px;flex-shrink:0}
+.card-tag{font-size:9px;padding:1px 6px;border-radius:6px;position:absolute;top:6px;right:6px}
+.card-tag.hosted{background:var(--brand-dim);color:var(--brand)}
+.card-tag.link{background:#4ade8014;color:var(--ok)}
+.card-name{font-size:11px;font-weight:600;line-height:1.3;word-break:break-word}
+.card-desc{display:none}
+.card-foot{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text3);margin-top:auto}
+.card-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.card-dot.ok{background:var(--ok)} .card-dot.warn{background:var(--warn)} .card-dot.bad{background:var(--bad)}
+.del-btn{position:absolute;bottom:4px;right:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:var(--r2);opacity:0;transition:.15s}
+.card:hover .del-btn{opacity:1}
+.del-btn:hover{color:var(--bad);background:#f8717114}
+
+@media(min-width:500px){
+  .card{padding:18px 14px 14px;gap:10px;border-radius:var(--r4)}
+  .card-icon{width:48px;height:48px;border-radius:12px;font-size:24px}
+  .card-tag{font-size:10px;padding:2px 7px;top:10px;right:10px}
+  .card-name{font-size:13px}
+  .card-desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:10px;color:var(--text2);line-height:1.4}
+  .card-foot{font-size:10px;gap:6px}
+  .card-dot{width:6px;height:6px}
+  .del-btn{bottom:8px;right:10px;padding:3px 6px;font-size:14px}
+}
+
+.sec{margin-bottom:28px}
+.sec-title{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:2px}
+.sec-title .count{font-weight:400;color:var(--text3)}
+@media(min-width:500px){.sec{margin-bottom:32px}.sec-title{font-size:11px;margin-bottom:10px}}
+
+.empty{text-align:center;padding:80px 20px;color:var(--text3)}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+.empty p{font-size:13px;color:var(--text2);margin-top:6px}
+
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
 .mask.show{display:flex}
-.modal{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);width:100%;max-width:520px;max-height:86vh;overflow:auto;padding:18px}
-.modal h2{font-size:15px;font-weight:500;margin-bottom:14px}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r4);width:100%;max-width:500px;max-height:90vh;overflow:auto;padding:22px}
+.modal h2{font-size:15px;font-weight:600;margin-bottom:16px}
 .frow{margin-bottom:12px}
-.frow label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
-.frow input,.frow select,.frow textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:7px 10px;font-size:13px;font-family:inherit}
-.frow input:focus,.frow select:focus,.frow textarea:focus{outline:none;border-color:rgba(255,146,146,.5)}
-.frow textarea{font-family:ui-monospace,Consolas,monospace;font-size:12px;resize:vertical;min-height:70px}
+.frow label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500}
+.finput{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);color:var(--text);padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
+.finput:focus{border-color:var(--brand)}
+.finput::placeholder{color:var(--text3)}
 .ftype{display:flex;gap:8px;margin-bottom:14px}
-.ftype button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--sub);cursor:pointer;font-size:13px}
-.ftype button.on{border-color:rgba(255,146,146,.5);color:var(--brand);background:var(--brand-soft)}
-.facts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
-.preview{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--sub);white-space:pre-wrap;max-height:120px;overflow:auto}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;display:flex;flex-direction:column;gap:8px}
-.card:hover{transform:translateY(-2px);border-color:rgba(255,146,146,.4)}
-.card::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--grad);opacity:.7}
-.card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.ic{font-size:22px}
-.tag{font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--sub);white-space:nowrap}
-.tag.app{color:var(--brand);border-color:rgba(255,146,146,.4);background:var(--brand-soft)}
-.tag.link{color:var(--ok);border-color:rgba(61,214,140,.35);background:rgba(61,214,140,.1)}
-.card-name{font-size:14px;font-weight:500}
-.card-desc{font-size:12px;color:var(--sub);min-height:32px;word-break:break-all}
-.card-foot{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--faint)}
-.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
-.dot.ok{background:var(--ok)}
-.dot.down{background:var(--bad)}
-.dot.unknown{background:var(--warn)}
-.dot.running{background:var(--ok)}
-.empty{color:var(--faint);text-align:center;padding:60px 0}
-.empty .big{font-size:34px;margin-bottom:8px}
-.group{margin-bottom:22px}
-.group-title{font-size:13px;color:var(--sub);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.group-title::after{content:"";flex:1;height:1px;background:var(--line)}
-.invalid{border-color:rgba(247,101,96,.4)}
-.invalid .card-name{color:var(--bad)}
-.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);color:var(--text);padding:9px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.toast.show{opacity:.97}
-@media(max-width:560px){.grid{grid-template-columns:1fr 1fr}.card-desc{min-height:auto}}
-@media(max-width:380px){.grid{grid-template-columns:1fr}}
+.ftype button{flex:1;padding:9px;border-radius:var(--r2);border:1px solid var(--line);background:var(--bg);color:var(--text2);cursor:pointer;font-size:12px;font-family:inherit}
+.ftype button.on{border-color:var(--brand);color:var(--brand);background:var(--brand-dim)}
+.drop-zone{border:2px dashed var(--line);border-radius:var(--r3);padding:22px;text-align:center;cursor:pointer;background:var(--bg);transition:.15s}
+.drop-zone:hover{border-color:var(--brand)}
+.dz-icon{font-size:32px;margin-bottom:4px}
+.dz-label{font-size:12px;color:var(--text2)}
+.dz-info{font-size:10px;color:var(--text3);margin-top:2px}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.btn{font:inherit;font-size:12px;padding:8px 16px;border-radius:var(--r2);border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer;font-weight:500;transition:.15s}
+.btn:hover{border-color:var(--brand)}
+.btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn.primary:hover{background:#ff5722}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.sm{font-size:11px;padding:5px 12px}
+.tip{font-size:11px;color:var(--text2);background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);padding:8px 10px;margin-bottom:10px;line-height:1.6}
+.preview{background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--text2);white-space:pre-wrap;max-height:100px;overflow:auto}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);color:var(--text);padding:10px 22px;border-radius:24px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:110;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.toast.show{opacity:1}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="brand"><div class="logo">TC</div><div><h1>Tools Center · 工具中心</h1><div class="meta" id="meta">加载中…</div></div></div>
-    <div class="stats" id="stats"></div>
-  </header>
-  <main id="main"><div class="empty"><div class="big">⌛</div>加载中…</div></main>
-</div>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><div class="logo-icon">TC</div><div class="logo-text">Tools Center<span id="meta"> 加载中</span></div></div>
+    <div class="hdr-acts">
+      <span class="hdr-stat" id="stat">—</span>
+      <button class="sm btn" onclick="load()">刷新</button>
+      <button class="sm btn primary" onclick="openAdd()">+ 添加</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs"><div class="tabs-inner"><button class="tab on" data-cat="all">全部</button></div></nav>
+
+<main class="main" id="main">
+  <div class="empty"><div class="empty-icon">—</div><p>加载中</p></div>
+</main>
+
 <div class="mask" id="addMask">
   <div class="modal">
-    <h2>＋ 添加工具</h2>
+    <h2>添加工具</h2>
     <div class="ftype">
-      <button id="ftApp" class="on" onclick="setType('app')">app · 托管进程</button>
-      <button id="ftLink" onclick="setType('link')">link · 外部跳转</button>
+      <button id="ftApp" class="on" onclick="setType('app')">托管进程</button>
+      <button id="ftLink" onclick="setType('link')">外部跳转</button>
     </div>
-    <div class="frow"><label>名称(必填)</label><input id="fName" placeholder="我的工具" autocomplete="off"></div>
+    <div class="frow"><label>名称</label><input class="finput" id="fName" placeholder="我的工具"></div>
     <div id="fLinkRows" style="display:none">
-      <div class="frow"><label>目标地址(url)</label><input id="fUrl" placeholder="http://192.168.1.100:8096" autocomplete="off"></div>
+      <div class="frow"><label>目标地址</label><input class="finput" id="fUrl" placeholder="http://..."></div>
     </div>
     <div id="fAppRows">
-      <div class="tip" style="font-size:12px;color:var(--sub);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:12px">端口自动分配 · 自动生成可运行示例。<b>也可上传代码文件或 zip 包(自动解压)</b>,保存即生效</div>
-      <div class="frow"><label>代码文件(可选,支持 zip)</label>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button class="btn ghost" onclick="pickFiles()">📁 选择文件</button>
-          <button class="btn ghost" onclick="pickDir()">📂 选择文件夹</button>
-          <span style="font-size:12px;color:var(--faint)" id="fFileCount">未选择</span>
+      <div class="tip">自动分配端口并生成示例。<b style="color:var(--brand)">可选 zip 自动解压</b></div>
+      <div class="frow"><label>代码 zip</label>
+        <div class="drop-zone" id="dropZone"
+          ondragover="event.preventDefault();this.style.borderColor='var(--brand)'"
+          ondragleave="this.style.borderColor='var(--line)'"
+          ondrop="event.preventDefault();this.style.borderColor='var(--line)';handleDrop(event.dataTransfer.files)"
+          onclick="pickZip()">
+          <div class="dz-icon">&#x1F4E6;</div>
+          <div class="dz-label">点击或拖拽 zip</div>
+          <div class="dz-info" id="fZipInfo">未选择</div>
         </div>
-        <div class="preview" id="fFileList" style="margin-top:6px;min-height:0">不选则使用自动生成的示例 server.mjs</div>
       </div>
     </div>
-    <button class="btn ghost" id="advBtn" onclick="toggleAdv()">▸ 高级设置(可选)</button>
+    <button class="btn" id="advBtn" onclick="toggleAdv()" style="width:100%;text-align:center">高级设置 ▸</button>
     <div id="fAdv" style="display:none;margin-top:10px">
-      <div class="frow"><label>id(留空自动生成)</label><input id="fId" placeholder="自动" autocomplete="off"></div>
-      <div class="frow"><label>描述</label><input id="fDesc" placeholder="一句话说明(可选)" autocomplete="off"></div>
-      <div class="frow"><label>分组</label><input id="fGroup" placeholder="工具" value="工具"></div>
-      <div class="frow"><label>图标(emoji)</label><input id="fIcon" placeholder="🧰" value="🧰"></div>
+      <div class="frow"><label>ID</label><input class="finput" id="fId" placeholder="自动生成"></div>
+      <div class="frow"><label>描述</label><input class="finput" id="fDesc" placeholder="一句话说明"></div>
+      <div class="frow"><label>分组</label><input class="finput" id="fGroup" value="工具"></div>
+      <div class="frow"><label>图标</label><input class="finput" id="fIcon" value="🔧"></div>
       <div id="fAdvApp">
-        <div class="frow"><label>启动命令 cmd(JSON,可选)</label><input id="fCmd" placeholder='留空自动: ["node","server.mjs","端口"]'></div>
-        <div class="frow"><label>端口(留空自动分配)</label><input id="fPort" type="number" placeholder="自动" min="8100" max="8199"></div>
-        <div class="frow"><label>健康检查路径(可选)</label><input id="fHealth" placeholder="/health"></div>
+        <div class="frow"><label>启动命令</label><input class="finput" id="fCmd" placeholder='自动: ["node","server.mjs","端口"]'></div>
+        <div class="frow"><label>端口</label><input class="finput" id="fPort" type="number" placeholder="自动"></div>
+        <div class="frow"><label>健康检查</label><input class="finput" id="fHealth" placeholder="/health"></div>
       </div>
     </div>
-    <div class="frow" id="fPreviewRow"><label>tool.json 预览</label><div class="preview" id="fPreview">{ }</div></div>
-    <div class="facts">
-      <button class="btn ghost" onclick="closeAdd()">取消</button>
-      <button class="btn" onclick="saveAdd()">保存并启用</button>
+    <div class="frow"><label>预览</label><div class="preview" id="fPreview">{ }</div></div>
+    <div class="acts">
+      <button class="btn" onclick="closeAdd()">取消</button>
+      <button class="btn primary" onclick="saveAdd()">保存并启用</button>
     </div>
   </div>
 </div>
-<input type="file" id="uploadInput" multiple hidden>
-<input type="file" id="fFileInput" multiple hidden>
-<input type="file" id="fDirInput" multiple webkitdirectory hidden>
+<input type="file" id="fZipInput" accept=".zip" hidden>
 <div class="toast" id="toast"></div>
+
+<div class="mask" id="cfmMask">
+  <div class="modal" style="max-width:340px">
+    <h2>确认删除</h2>
+    <div class="tip" id="cfmMsg"></div>
+    <input class="finput" id="cfmPass" type="password" placeholder="管理员密码">
+    <div class="acts">
+      <button class="btn" onclick="closeCfm(false)">取消</button>
+      <button class="btn danger" id="cfmOk">确认</button>
+    </div>
+  </div>
+</div>
+
+<div class="mask" id="adminMask">
+  <div class="modal" style="max-width:340px">
+    <h2>设置管理员密码</h2>
+    <div class="tip">用于删除工具等敏感操作</div>
+    <input class="finput" id="adminPass1" type="password" placeholder="至少 4 位">
+    <div class="acts"><button class="btn primary" id="adminOk">确认</button></div>
+  </div>
+</div>
+
 <script>
-const $ = (id) => document.getElementById(id);
-function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2600); }
+const $=id=>document.getElementById(id);
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400)}
+
+let tools=[], activeCat="all";
 
 async function load(){
   try{
-    const j = await (await fetch("/api/tools", { cache:"no-store" })).json();
-    if(!j.ok) throw new Error(j.error||"加载失败");
-    const tools = (j.tools || []).filter(t => !t.hidden);
-    const appN = tools.filter(t=>t.type==="app").length;
-    const linkN = tools.filter(t=>t.type==="link").length;
-    const downN = tools.filter(t=>t.status&&t.status.status==="error").length;
-    $("meta").textContent = "共 " + tools.length + " 个工具 · 把工具目录放进 tools/ 后点刷新即自动发现 · 点右上角刷新状态";
-    $("stats").innerHTML =
-      `<button class="btn ghost" onclick="openAdd()">＋ 添加工具</button>` +
-      `<button class="btn" onclick="load()">刷新</button>` +
-      `<span class="chip">🧰 ${tools.length} 工具</span>` +
-      `<span class="chip">📦 ${appN} 托管</span>` +
-      `<span class="chip">🔗 ${linkN} 链接</span>` +
-      (downN ? `<span class="chip" style="color:var(--bad)">⚠️ ${downN} 异常</span>` : `<span class="chip" style="color:var(--ok)">✅ 全部正常</span>`);
-    render(tools);
-  }catch(e){ $("main").innerHTML = `<div class="empty"><div class="big">❌</div>${e.message}</div>`; }
+    const j=await(await fetch("/api/tools",{cache:"no-store"})).json();
+    if(!j.ok)throw new Error(j.error);
+    tools=(j.tools||[]).filter(t=>!t.hidden);
+    renderTabs();
+    renderCards();
+    const running=tools.filter(t=>t.status&&t.status.status==="running").length;
+    $("stat").textContent=running+"/"+tools.length+" 运行";
+    $("meta").textContent=" · "+tools.length+" 工具";
+  }catch(e){$("main").innerHTML=`<div class="empty"><div class="empty-icon">!</div><p>${e.message}</p></div>`}
 }
 
-function render(tools){
-  if(!tools.length){ $("main").innerHTML = '<div class="empty"><div class="big">🧰</div>暂无工具<br>在 tools/ 目录下放一个 tool.json 即可</div>'; return; }
-  const groups = {};
-  for(const t of tools) (groups[t.group] = groups[t.group]||[]).push(t);
-  window.__tools = tools; // 供点击委托查 url
-  $("main").innerHTML = Object.entries(groups).map(([g, arr]) => `
-    <div class="group"><div class="group-title">${g}</div><div class="grid">${arr.map(cardHtml).join("")}</div></div>`).join("");
+function renderTabs(){
+  const cats=[...new Set(tools.map(t=>t.group||"工具"))];
+  $("tabs").querySelector(".tabs-inner").innerHTML=
+    `<button class="tab ${activeCat==="all"?"on":""}" data-cat="all" onclick="setCat('all')">全部</button>`+
+    cats.map(c=>`<button class="tab ${activeCat===c?"on":""}" data-cat="${c}" onclick="setCat(this.dataset.cat)">${c}</button>`).join("")
+}
+
+function setCat(c){activeCat=c;renderTabs();renderCards()}
+
+function renderCards(){
+  const filtered=activeCat==="all"?tools:tools.filter(t=>(t.group||"工具")===activeCat);
+  if(!filtered.length){$("main").innerHTML='<div class="empty"><div class="empty-icon">&#x1F50D;</div><p>此分类暂无工具</p></div>';return}
+  window.__tools=filtered;
+  const groups={};
+  for(const t of filtered)(groups[t.group||"工具"]=groups[t.group||"工具"]||[]).push(t);
+  $("main").innerHTML=Object.entries(groups).map(([g,arr])=>
+    `<div class="sec"><div class="sec-title">${g} <span class="count">${arr.length}</span></div><div class="grid">${arr.map(cardHtml).join("")}</div></div>`).join("")
 }
 
 function cardHtml(t){
-  const st = t.status || {};
-  const dotCls = t.type==="link" ? "unknown" : (st.status==="running" ? "running" : (st.status==="error" ? "down" : "unknown"));
-  const tagCls = t.type==="app" ? "app" : "link";
-  const tagTxt = t.type==="app" ? "托管" : "链接";
-  const invalid = !t.valid ? " invalid" : "";
-  const err = t.error || st.error || "";
-  return `<div class="card${invalid}" data-id="${t.id}">
-    <div class="card-top"><span class="ic">${t.icon}</span><span class="tag ${tagCls}">${tagTxt}</span></div>
+  const st=t.status||{};
+  const dotCls=t.type==="link"?"warn":(st.status==="running"?"ok":(st.status==="error"?"bad":"warn"));
+  const stxt=t.type==="link"?"链接":(st.status==="running"?"运行":(st.status||"—"));
+  return`<div class="card" data-id="${t.id}">
+    <span class="card-tag ${t.type==="app"?"hosted":"link"}">${t.type==="app"?"托管":"链接"}</span>
+    <div class="card-icon">${t.icon||"&#x1F4E6;"}</div>
     <div class="card-name">${t.name}</div>
-    <div class="card-desc">${t.desc || "—"}${err ? `<br><span style="color:var(--bad)">⚠ ${err}</span>` : ""}</div>
-    <div class="card-foot"><span><span class="dot ${dotCls}"></span>${statusTxt(t)}</span><span>${t.type==="app" ? ":"+t.port : ""}${t.type==="app" ? `<button class="del-btn" title="上传代码文件" onclick="event.stopPropagation();uploadFiles('${t.id}')">⬆</button>` : ""}<button class="del-btn" title="删除工具" onclick="event.stopPropagation();delTool('${t.id}','${t.name}')">🗑</button></span></div>
-  </div>`;
+    <div class="card-desc">${t.desc||""}</div>
+    <div class="card-foot"><span class="card-dot ${dotCls}"></span>${stxt}</div>
+    <button class="del-btn" onclick="event.stopPropagation();delTool('${t.id}','${t.name}')">&#x1F5D1;</button>
+  </div>`
 }
-function statusTxt(t){
-  const st = t.status || {};
-  if(t.type==="link") return st.status==="invalid" ? "配置无效" : "外部链接";
-  if(st.status==="running") return st.health==="ok" ? "运行中 · 健康" : (st.health==="down" ? "运行中 · 异常" : "运行中");
-  if(st.status==="error") return "异常";
-  return st.status || "停止";
-}
-// 点击卡片:link 型新标签页跳 url;app 型进入 /tool/<id>/(带尾斜杠,保证相对路径解析正确)
-document.addEventListener("click", (e)=>{
-  const card = e.target.closest(".card");
-  if(!card) return;
-  const t = (window.__tools||[]).find(x=>x.id===card.dataset.id);
-  if(!t) return;
-  window.open(t.type==="link" ? t.url : "/tool/"+t.id+"/", "_blank");
+
+document.addEventListener("click",e=>{
+  const card=e.target.closest(".card");
+  if(!card)return;
+  const t=(window.__tools||[]).find(x=>x.id===card.dataset.id);
+  if(t)window.open(t.type==="link"?t.url:"/tool/"+t.id+"/","_blank")
 });
 
-// ---- 在线添加工具(极简:只填名称,其余自动;高级设置折叠) ----
-let addType = "app";
-let advOpen = false;
-let selFiles = []; // 创建时一并上传的文件
-function openAdd(){ $("addMask").classList.add("show"); updatePreview(); }
-function closeAdd(){ $("addMask").classList.remove("show"); }
-function toggleAdv(){
-  advOpen = !advOpen;
-  $("fAdv").style.display = advOpen ? "" : "none";
-  $("advBtn").textContent = (advOpen ? "▾" : "▸") + " 高级设置(可选)";
-  updatePreview();
-}
-function setType(t){
-  addType = t;
-  $("ftApp").classList.toggle("on", t==="app");
-  $("ftLink").classList.toggle("on", t==="link");
-  $("fAppRows").style.display = t==="app" ? "" : "none";
-  $("fLinkRows").style.display = t==="link" ? "" : "none";
-  $("fAdvApp").style.display = t==="app" ? "" : "none";
-  updatePreview();
-}
+// Add tool
+let addType="app",advOpen=!1;
+function openAdd(){$("addMask").classList.add("show");updatePreview()}
+function closeAdd(){$("addMask").classList.remove("show")}
+function toggleAdv(){advOpen=!advOpen;$("fAdv").style.display=advOpen?"":"none";$("advBtn").textContent=(advOpen?"▾":"▸")+" 高级设置";updatePreview()}
+function setType(t){addType=t;$("ftApp").classList.toggle("on",t==="app");$("ftLink").classList.toggle("on",t==="link");$("fAppRows").style.display=t==="app"?"":"none";$("fLinkRows").style.display=t==="link"?"":"none";$("fAdvApp").style.display=t==="app"?"":"none";updatePreview()}
 function collectSpec(){
-  const spec = { name: ($("fName").value||"").trim(), type: addType };
-  if(addType==="link") spec.url = ($("fUrl").value||"").trim();
-  // 高级设置:填了才带上(空值让后端自动补全)
-  const adv = {
-    id: $("fId").value.trim(), desc: $("fDesc").value.trim(), group: $("fGroup").value.trim(),
-    icon: $("fIcon").value.trim(), cmd: $("fCmd").value.trim(), port: $("fPort").value.trim(),
-    health: $("fHealth").value.trim(),
-  };
-  if(adv.id) spec.id = adv.id;
-  if(adv.desc) spec.desc = adv.desc;
-  if(adv.group && adv.group !== "工具") spec.group = adv.group;
-  if(adv.icon && adv.icon !== "🧰") spec.icon = adv.icon;
-  if(addType==="app"){
-    if(adv.cmd){ try { const c = JSON.parse(adv.cmd); if(Array.isArray(c)) spec.cmd = c; } catch {} }
-    if(adv.port) spec.port = parseInt(adv.port, 10);
-    if(adv.health) spec.health = adv.health;
-  }
-  return spec;
+  const s={name:($("fName").value||"").trim(),type:addType};
+  if(addType==="link")s.url=($("fUrl").value||"").trim();
+  const a={id:$("fId").value.trim(),desc:$("fDesc").value.trim(),group:$("fGroup").value.trim(),icon:$("fIcon").value.trim(),cmd:$("fCmd").value.trim(),port:$("fPort").value.trim(),health:$("fHealth").value.trim()};
+  if(a.id)s.id=a.id;if(a.desc)s.desc=a.desc;if(a.group&&a.group!=="工具")s.group=a.group;if(a.icon&&a.icon!=="🔧")s.icon=a.icon;
+  if(addType==="app"){if(a.cmd){try{const c=JSON.parse(a.cmd);if(Array.isArray(c))s.cmd=c}catch{}}if(a.port)s.port=parseInt(a.port,10);if(a.health)s.health=a.health}
+  return s
 }
-function updatePreview(){
-  const spec = collectSpec();
-  const p = {...spec};
-  if(advOpen || (addType==="link" && !p.url)) {
-    $("fPreview").textContent = JSON.stringify(p, null, 2);
-  } else {
-    // 极简模式:显示"自动补全"说明
-    $("fPreview").textContent =
-      (addType==="app"
-        ? "id 自动生成 · 端口自动分配\ncmd 自动: [\"node\",\"server.mjs\",\"端口\"]\n并自动生成可运行的 server.mjs"
-        : "id 自动生成") + "\n发送: " + JSON.stringify(p);
-  }
-}
-["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach((id)=>{
-  const el = document.getElementById(id);
-  if(el) el.addEventListener("input", updatePreview);
-});
-function pickFiles(){ $("fFileInput").value=""; $("fFileInput").click(); }
-function pickDir(){ $("fDirInput").value=""; $("fDirInput").click(); }
-function onFilesPicked(files){
-  selFiles = files;
-  $("fFileCount").textContent = selFiles.length ? `已选 ${selFiles.length} 个文件` : "未选择";
-  $("fFileList").textContent = selFiles.length ? selFiles.slice(0,8).map(f=>f.webkitRelativePath||f.name).join("\n") + (selFiles.length>8?`\n… 共 ${selFiles.length} 个`:"") : "不选则使用自动生成的示例 server.mjs";
-}
-$("fFileInput").addEventListener("change", (e)=>onFilesPicked([...(e.target.files||[])]));
-$("fDirInput").addEventListener("change", (e)=>onFilesPicked([...(e.target.files||[])]));
-async function uploadFilesTo(id, files){
-  let ok = 0;
-  for(const f of files){
-    try{
-      const text = await f.text();
-      const name = f.webkitRelativePath || f.name; // 目录上传保留子路径
-      const j = await (await fetch(`/api/tools/${id}/upload`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ name, content: text }) })).json();
-      if(j.ok) ok++;
-    }catch{}
-  }
-  if(ok) await fetch(`/api/tools/${id}/restart`, { method:"POST" });
-  return ok;
-}
+function updatePreview(){$("fPreview").textContent=JSON.stringify(collectSpec(),null,2)}
+["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",updatePreview)});
+
+let selZip=null;
+function pickZip(){$("fZipInput").value="";$("fZipInput").click()}
+function handleDrop(files){if(files.length){selZip=files[0];$("fZipInfo").textContent=selZip.name+" ("+Math.round(selZip.size/1024)+" KB)"}}
+$("fZipInput").addEventListener("change",()=>{const f=$("fZipInput").files[0];if(f){selZip=f;$("fZipInfo").textContent=f.name+" ("+Math.round(f.size/1024)+" KB)"}})
+async function uploadZipTo(id,zip){const fd=new FormData();fd.append("path","tools/"+id+"/");fd.append("file",zip,zip.name);const j=await(await fetch("/api/files",{method:"POST",body:fd})).json();if(!j.ok)throw new Error(j.error);await fetch("/api/tools/"+id+"/restart",{method:"POST"})}
 async function saveAdd(){
-  const spec = collectSpec();
-  if(!spec.name){ toast("⚠️ 请填写工具名称"); return; }
-  if(spec.type==="link" && !/^https?:\/\//.test(spec.url||"")){ toast("⚠️ link 型需 http(s) 地址"); return; }
+  const spec=collectSpec();
+  if(!spec.name){toast("请填写名称");return}
+  if(spec.type==="link"&&!/^https?:\/\//.test(spec.url||"")){toast("link 型需 http(s) 地址");return}
   try{
-    const j = await (await fetch("/api/tools", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(spec) })).json();
-    if(!j.ok) throw new Error(j.error||"创建失败");
-    const id = j.tool && j.tool.id;
-    let uploaded = 0;
-    if(spec.type==="app" && id && selFiles.length) uploaded = await uploadFilesTo(id, selFiles);
-    closeAdd();
-    ["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach((x)=>{ const el=document.getElementById(x); if(el) el.value=""; });
-    selFiles = []; $("fFileCount").textContent = "未选择"; $("fFileList").textContent = "不选则使用自动生成的示例 server.mjs";
-    toast(spec.type==="link" ? "✅ 链接已添加"
-      : uploaded ? `✅ 已创建并上传 ${uploaded} 个文件,已启动`
-      : "✅ 已创建并运行(自动生成示例)");
-    load();
-  }catch(e){ toast("❌ "+e.message); }
-}
-async function delTool(id, name){
-  if(!confirm(`确认删除工具「${name}」?\n将删除 tools/${id} 目录(含 tool.json),不可恢复。`)) return;
-  try{
-    const j = await (await fetch("/api/tools", { method:"DELETE", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ id }) })).json();
-    if(!j.ok) throw new Error(j.error||"删除失败");
-    toast("🗑 已删除");
-    load();
-  }catch(e){ toast("❌ "+e.message); }
+    const j=await(await fetch("/api/tools",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(spec)})).json();
+    if(!j.ok)throw new Error(j.error);
+    const id=j.tool&&j.tool.id;
+    if(spec.type==="app"&&id&&selZip)await uploadZipTo(id,selZip);
+    closeAdd();["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach(x=>{const el=document.getElementById(x);if(el)el.value=""});
+    selZip=null;$("fZipInfo").textContent="未选择";
+    toast("已创建");load()
+  }catch(e){toast(e.message)}
 }
 
-// ---- 上传代码文件(网页接入:把用户自己的程序放进工具目录) ----
-let uploadTarget = "";
-function uploadFiles(id){
-  uploadTarget = id;
-  const input = $("uploadInput");
-  input.value = "";
-  input.click();
-}
-$("uploadInput").addEventListener("change", async (e)=>{
-  const files = [...(e.target.files||[])];
-  if(!files.length || !uploadTarget) return;
-  const t = (window.__tools||[]).find(x=>x.id===uploadTarget);
-  if(!t){ toast("❌ 工具不存在"); return; }
-  toast(`⬆ 上传 ${files.length} 个文件…`);
-  let ok = 0, fail = 0;
-  for(const f of files){
-    try{
-      const text = await f.text();
-      const j = await (await fetch(`/api/tools/${uploadTarget}/upload`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ name: f.name, content: text }) })).json();
-      if(j.ok) ok++; else fail++;
-    }catch{ fail++; }
-  }
-  if(ok){ toast(`✅ 已上传 ${ok} 个文件,重启生效`); await fetch(`/api/tools/${uploadTarget}/restart`, { method:"POST" }); load(); }
-  else toast("❌ 上传失败");
-  uploadTarget = "";
-});
-document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeAdd(); });
+let cfmResolve=null;
+function cfmConfirm(msg){return new Promise(r=>{cfmResolve=r;$("cfmMsg").textContent=msg;$("cfmPass").value="";$("cfmMask").classList.add("show");setTimeout(()=>$("cfmPass").focus(),100)})}
+function closeCfm(ok){const pass=$("cfmPass").value;$("cfmMask").classList.remove("show");if(cfmResolve){cfmResolve(ok?pass:null);cfmResolve=null}}
+$("cfmOk").addEventListener("click",()=>closeCfm(!0));
+$("cfmPass").addEventListener("keydown",e=>{if(e.key==="Enter")closeCfm(!0)});
+async function delTool(id,name){const pass=await cfmConfirm("确认删除 "+name+" ?");if(!pass)return;try{const j=await(await fetch("/api/tools",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,pass})})).json();if(!j.ok)throw new Error(j.error);toast("已删除");load()}catch(e){toast(e.message)}}
 
+async function checkAdminPass(){try{const j=await(await fetch("/api/admin/pass")).json();if(!j.set){$("adminMask").classList.add("show");setTimeout(()=>$("adminPass1").focus(),200)}}catch{}}
+async function setAdminPass(){const p=$("adminPass1").value;if(!p||p.length<4){toast("密码至少 4 位");return}try{const j=await(await fetch("/api/admin/pass",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pass:p})})).json();if(!j.ok)throw new Error(j.error);$("adminMask").classList.remove("show");toast("已设置")}catch(e){toast(e.message)}}
+$("adminOk").addEventListener("click",setAdminPass);
+$("adminPass1").addEventListener("keydown",e=>{if(e.key==="Enter")setAdminPass()});
+checkAdminPass();
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAdd()});
 load();
 </script>
 </body>

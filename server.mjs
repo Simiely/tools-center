@@ -9,6 +9,20 @@ import { scanTools, listTools, getTool, createTool, removeTool } from "./lib/reg
 import * as manager from "./lib/manager.js";
 import { proxyRequest } from "./lib/proxy.js";
 import { readLog } from "./lib/logger.js";
+import crypto from "node:crypto";
+
+const ADMIN_PASS_FILE = path.join(DIRS.data, "admin-pass.json");
+function loadAdminPass() { try { return JSON.parse(fs.readFileSync(ADMIN_PASS_FILE, "utf8")).pass; } catch { return ""; } }
+function saveAdminPass(pass) { fs.mkdirSync(DIRS.data, { recursive: true }); fs.writeFileSync(ADMIN_PASS_FILE, JSON.stringify({ pass }), "utf8"); }
+
+/** 跨平台解压:优先 unzip,Windows 无 unzip 时回退 PowerShell Expand-Archive */
+function unzip(zipPath, destDir) {
+  if (process.platform === "win32") {
+    execSync(`powershell -NoProfile -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${destDir}' -Force"`, { stdio: "pipe" });
+  } else {
+    execSync(`unzip -o -q "${zipPath}" -d "${destDir}"`, { stdio: "pipe" });
+  }
+}
 
 scanTools();
 manager.startAll();
@@ -62,9 +76,11 @@ const server = http.createServer(async (req, res) => {
     }
     // 在线删除工具
     if (url.pathname === "/api/tools" && req.method === "DELETE") {
-      let id = "";
-      try { id = String(JSON.parse((await body()) || "{}").id || ""); } catch {}
+      let id = "", pass = "";
+      try { const b = JSON.parse((await body()) || "{}"); id = String(b.id || ""); pass = String(b.pass || ""); } catch {}
       if (!id) return json(400, { ok: false, error: "缺少 id" });
+      const adminPass = loadAdminPass();
+      if (adminPass && pass !== adminPass) return json(403, { ok: false, error: "密码错误" });
       try {
         // 先停子进程(否则 Windows 下目录被占用,rmdir EBUSY),再删
         const t = getTool(id);
@@ -80,6 +96,17 @@ const server = http.createServer(async (req, res) => {
       scanTools();
       manager.sync();
       return json(200, { ok: true, total: listTools().length });
+    }
+    // 管理员密码:状态查询 + 首次设置
+    if (url.pathname === "/api/admin/pass") {
+      if (req.method === "GET") return json(200, { ok: true, set: !!loadAdminPass() });
+      if (req.method === "POST") {
+        const { pass } = JSON.parse((await body()) || "{}");
+        if (!pass || String(pass).length < 4) return json(400, { ok: false, error: "密码至少4位" });
+        if (loadAdminPass()) return json(400, { ok: false, error: "已设置过密码" });
+        saveAdminPass(String(pass));
+        return json(200, { ok: true });
+      }
     }
     if (url.pathname.startsWith("/api/logs/")) {
       const id = decodeURIComponent(url.pathname.split("/")[3] || "");
@@ -99,30 +126,33 @@ const server = http.createServer(async (req, res) => {
         const chunks = []; for await (const c of req) chunks.push(c);
         const buf = Buffer.concat(chunks).toString("binary");
         const parts = buf.split(boundary).slice(1, -1);
-        let target = "", content = "";
+        let target = "", content = "", filename = "";
         for (const p of parts) {
           const [header, ...bodyLines] = p.replace(/^\r?\n/, "").split("\r\n\r\n");
           const nameMatch = header.match(/name="([^"]+)"/);
           if (!nameMatch) continue;
           const body = bodyLines.join("\r\n\r\n").replace(/\r?\n--$/, "");
           if (nameMatch[1] === "path") target = body.trim();
-          if (nameMatch[1] === "file") content = body;
+          if (nameMatch[1] === "file") { content = body; const fm = header.match(/filename="([^"]*)"/); if (fm) filename = fm[1]; }
         }
         if (!target) return json(400, { ok: false, error: "缺少 path" });
-        const dest = path.resolve(DIRS.tools, "..", target); // 限定在 tools/ 和 data/ 同级
+        // path 以 / 结尾视为目录:自动拼接上传文件名(如 tools/wb-credits/ + code.zip)
+        const realPath = target.endsWith("/") || target.endsWith("\\") ? target + (filename || "file.bin") : target;
+        const dest = path.resolve(DIRS.tools, "..", realPath); // 限定在 tools/ 和 data/ 同级
         const root = path.resolve(DIRS.tools, "..");
         if (dest !== root && !dest.startsWith(root + path.sep)) return json(400, { ok: false, error: "路径越界" });
         fs.mkdirSync(path.dirname(dest), { recursive: true });
         fs.writeFileSync(dest, Buffer.from(content, "binary"));
         // zip 自动解压到目标目录,解压后删除压缩包
-        if (target.toLowerCase().endsWith(".zip")) {
+        const isZip = realPath.toLowerCase().endsWith(".zip");
+        if (isZip) {
           const dir = path.dirname(dest);
-          try { execSync("unzip -o -q \"" + dest + "\" -d \"" + dir + "\"", { stdio: "pipe" }); } catch (e) {
+          try { unzip(dest, dir); } catch (e) {
             fs.unlinkSync(dest); return json(400, { ok: false, error: "解压失败: " + e.message });
           }
-          fs.unlinkSync(dest);
+          try { fs.unlinkSync(dest); } catch { /* 删除失败不阻塞(沙箱/只读卷下 zip 残留无害) */ }
         }
-        return json(200, { ok: true, path: target, unzipped: target.toLowerCase().endsWith(".zip") });
+        return json(200, { ok: true, path: realPath, unzipped: isZip });
       }
       // JSON 模式(兼容旧)
       const j = JSON.parse((await body()) || "{}");
