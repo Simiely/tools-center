@@ -89,11 +89,16 @@ const server = http.createServer(async (req, res) => {
       if (parts[4] === "upload" && req.method === "POST") {
         let j;
         try { j = JSON.parse((await body()) || "{}"); } catch { return json(400, { ok: false, error: "JSON 解析失败" }); }
-        const name = String(j.name || "").replace(/[\\/]/g, "_").trim();
-        if (!name || name === "." || name === ".." || name.includes("..")) return json(400, { ok: false, error: "非法文件名" });
+        // name 可为子路径(如 lib/accounts.js);去前导 ../ 并校验最终路径仍在工具目录内
+        const raw = String(j.name || "").replace(/^[\\/]+/, "");
+        const target = path.resolve(t.dir, raw);
+        if (!raw || target !== t.dir && !target.startsWith(t.dir + path.sep)) {
+          return json(400, { ok: false, error: "非法路径" });
+        }
         try {
-          fs.writeFileSync(path.join(t.dir, name), String(j.content ?? ""), "utf8");
-          return json(200, { ok: true, name, hint: "文件已写入,重启工具生效" });
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, String(j.content ?? ""), "utf8");
+          return json(200, { ok: true, name: raw, hint: "文件已写入,重启工具生效" });
         } catch (e) {
           return json(500, { ok: false, error: e.message });
         }

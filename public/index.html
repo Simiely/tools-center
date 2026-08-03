@@ -93,9 +93,10 @@ h1{font-size:17px;font-weight:500}
     </div>
     <div id="fAppRows">
       <div class="tip" style="font-size:12px;color:var(--sub);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:12px">端口自动分配 · 自动生成可运行示例。<b>也可以直接选你的代码文件一起上传</b>,保存即生效</div>
-      <div class="frow"><label>代码文件(可选,可多选)</label>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="frow"><label>代码文件(可选,可多选/整目录)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn ghost" onclick="pickFiles()">📁 选择文件</button>
+          <button class="btn ghost" onclick="pickDir()">📂 选择文件夹</button>
           <span style="font-size:12px;color:var(--faint)" id="fFileCount">未选择</span>
         </div>
         <div class="preview" id="fFileList" style="margin-top:6px;min-height:0">不选则使用自动生成的示例 server.mjs</div>
@@ -122,6 +123,7 @@ h1{font-size:17px;font-weight:500}
 </div>
 <input type="file" id="uploadInput" multiple hidden>
 <input type="file" id="fFileInput" multiple hidden>
+<input type="file" id="fDirInput" multiple webkitdirectory hidden>
 <div class="toast" id="toast"></div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -245,17 +247,21 @@ function updatePreview(){
   if(el) el.addEventListener("input", updatePreview);
 });
 function pickFiles(){ $("fFileInput").value=""; $("fFileInput").click(); }
-$("fFileInput").addEventListener("change", (e)=>{
-  selFiles = [...(e.target.files||[])];
-  $("fFileCount").textContent = selFiles.length ? `已选 ${selFiles.length} 个` : "未选择";
-  $("fFileList").textContent = selFiles.length ? selFiles.map(f=>f.name).join("\n") : "不选则使用自动生成的示例 server.mjs";
-});
+function pickDir(){ $("fDirInput").value=""; $("fDirInput").click(); }
+function onFilesPicked(files){
+  selFiles = files;
+  $("fFileCount").textContent = selFiles.length ? `已选 ${selFiles.length} 个文件` : "未选择";
+  $("fFileList").textContent = selFiles.length ? selFiles.slice(0,8).map(f=>f.webkitRelativePath||f.name).join("\n") + (selFiles.length>8?`\n… 共 ${selFiles.length} 个`:"") : "不选则使用自动生成的示例 server.mjs";
+}
+$("fFileInput").addEventListener("change", (e)=>onFilesPicked([...(e.target.files||[])]));
+$("fDirInput").addEventListener("change", (e)=>onFilesPicked([...(e.target.files||[])]));
 async function uploadFilesTo(id, files){
   let ok = 0;
   for(const f of files){
     try{
       const text = await f.text();
-      const j = await (await fetch(`/api/tools/${id}/upload`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ name: f.name, content: text }) })).json();
+      const name = f.webkitRelativePath || f.name; // 目录上传保留子路径
+      const j = await (await fetch(`/api/tools/${id}/upload`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ name, content: text }) })).json();
       if(j.ok) ok++;
     }catch{}
   }
