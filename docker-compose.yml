@@ -1,0 +1,16 @@
+services:
+  tools-center:
+    build: .
+    image: tools-center:latest
+    container_name: tools-center
+    ports:
+      - "8080:8080"
+    volumes:
+      # 工具目录(挂载:添加工具 = 往这里放 tool.json,或用网页在线添加)
+      - ./tools:/app/tools
+      # 运行时数据(日志等)
+      - ./data:/app/data
+    environment:
+      - PORT=8080
+      - TZ=Asia/Shanghai
+    restart: unless-stopped

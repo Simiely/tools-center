@@ -20,7 +20,9 @@
 # 1. 启动(开发环境)
 node server.mjs                # 打开 http://127.0.0.1:8080
 
-# 2. 添加一个工具:放目录 + 写 tool.json
+# 2. 添加一个工具(两种方式任选)
+#    网页:首页右上角「＋ 添加工具」在线填写 → 自动生成 tool.json → 启用
+#    手动:放目录 + 写 tool.json
 mkdir -p tools/my-tool
 cat > tools/my-tool/tool.json <<'EOF'
 { "id": "my-tool", "name": "我的工具", "type": "app",
@@ -30,6 +32,9 @@ EOF
 # 3. 重载 → 首页出现卡片
 curl -X POST http://127.0.0.1:8080/api/reload
 ```
+
+> 📖 **怎么接入你自己的小工具**(app 托管 / link 跳转、在线添加、字段速查、NAS 部署):
+> 见 [`docs/使用指南.md`](docs/使用指南.md)
 
 NAS 部署(群晖 Container Manager / Docker Compose)步骤见 [`DEVELOPMENT.md`](DEVELOPMENT.md)。
 
@@ -42,6 +47,7 @@ NAS 部署(群晖 Container Manager / Docker Compose)步骤见 [`DEVELOPMENT.md`
 | [`CHANGELOG.md`](CHANGELOG.md) | 所有人 | 版本变更记录 |
 | [`DESIGN.md`](DESIGN.md) | 开发者 | **详细架构设计**(模块/规范/部署/安全) |
 | [`PLAN.md`](PLAN.md) | 所有人 | **完整路线图**(里程碑 M0~M5 / 任务分解 / 验收) |
+| [`docs/使用指南.md`](docs/使用指南.md) | 用户 | **接入你的小工具**(app/link、在线添加、字段速查、NAS 部署) |
 
 ## 首批工具矩阵(规划)
 

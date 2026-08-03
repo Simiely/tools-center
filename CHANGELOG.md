@@ -2,6 +2,26 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.4.0 (2026-08-03) · 自助接入 + Docker 化
+
+**程序完整化:用户可以自己在线添加/删除工具,并可容器化部署。**
+
+### 新增
+- **工具管理 API**:`POST /api/tools`(在线创建,校验+建目录+写 tool.json+启用)、`DELETE /api/tools/<id>`(停进程+删目录)
+- **首页在线添加**:「＋ 添加工具」弹窗表单(app/link 切换、字段、实时 tool.json 预览、保存即启用);卡片 🗑 删除按钮(confirm)
+- **Docker 化**:`Dockerfile`(node:22-slim,USER node)、`docker-compose.yml`(8080、tools/data 挂载卷、TZ)、`.dockerignore`
+- **接入指南** [`docs/使用指南.md`](docs/使用指南.md):app/link 两种接入、在线添加/手动文件、字段速查、NAS 部署、常见问题
+
+### 修复
+- **进程状态与配置解耦**:manager 运行时状态改存内部 `run` Map,不再写 `ToolSpec`(`scanTools` 重建 spec 不再丢状态——此前出现"进程在跑但状态显示 stopped")
+- **删除运行中工具 EBUSY**:Windows 下子进程占用目录导致 rmdir 失败 → DELETE 先 `manager.stop` 再删
+- `manager.stop` 导出缺失
+
+### 验证(全通过)
+- 在线创建 app/link → 首页出现 → 放代码 → restart → running+ok → 删除成功
+- 重复创建/非法 id 正确报错;创建删除后其他工具状态稳定(running 不丢)
+- wb-credits 全程 running + health ok;反代正常
+
 ## v0.3.0 (2026-08-03) · M2 接入积分仪表盘
 
 **第一个真实工具接入,平台跑通完整闭环。**

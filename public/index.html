@@ -22,8 +22,26 @@ h1{font-size:17px;font-weight:500}
 .meta{font-size:12px;color:var(--faint)}
 .stats{display:flex;gap:8px;flex-wrap:wrap}
 .chip{font-size:12px;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
-.btn{font-size:12px;color:var(--text);background:var(--grad);color:#2d1a1a;border:none;border-radius:999px;padding:4px 14px;font-weight:500;cursor:pointer;border:1px solid transparent}
+.btn{font-size:12px;color:#2d1a1a;background:var(--grad);border:none;border-radius:999px;padding:4px 14px;font-weight:500;cursor:pointer}
 .btn:hover{opacity:.9}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:rgba(255,146,146,.4)}
+.del-btn{font-size:12px;color:var(--faint);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:6px}
+.del-btn:hover{color:var(--bad);background:rgba(247,101,96,.1)}
+.mask{position:fixed;inset:0;background:rgba(10,12,16,.6);display:none;align-items:center;justify-content:center;z-index:80;padding:16px}
+.mask.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);width:100%;max-width:520px;max-height:86vh;overflow:auto;padding:18px}
+.modal h2{font-size:15px;font-weight:500;margin-bottom:14px}
+.frow{margin-bottom:12px}
+.frow label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
+.frow input,.frow select,.frow textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:7px 10px;font-size:13px;font-family:inherit}
+.frow input:focus,.frow select:focus,.frow textarea:focus{outline:none;border-color:rgba(255,146,146,.5)}
+.frow textarea{font-family:ui-monospace,Consolas,monospace;font-size:12px;resize:vertical;min-height:70px}
+.ftype{display:flex;gap:8px;margin-bottom:14px}
+.ftype button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--sub);cursor:pointer;font-size:13px}
+.ftype button.on{border-color:rgba(255,146,146,.5);color:var(--brand);background:var(--brand-soft)}
+.facts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.preview{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--sub);white-space:pre-wrap;max-height:120px;overflow:auto}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;display:flex;flex-direction:column;gap:8px}
 .card:hover{transform:translateY(-2px);border-color:rgba(255,146,146,.4)}
@@ -62,6 +80,33 @@ h1{font-size:17px;font-weight:500}
   </header>
   <main id="main"><div class="empty"><div class="big">⌛</div>加载中…</div></main>
 </div>
+<div class="mask" id="addMask">
+  <div class="modal">
+    <h2>＋ 添加工具</h2>
+    <div class="ftype">
+      <button id="ftApp" class="on" onclick="setType('app')">app · 托管进程</button>
+      <button id="ftLink" onclick="setType('link')">link · 外部跳转</button>
+    </div>
+    <div class="frow"><label>id(唯一,小写字母数字-)</label><input id="fId" placeholder="my-tool"></div>
+    <div class="frow"><label>名称</label><input id="fName" placeholder="我的工具"></div>
+    <div class="frow"><label>描述</label><input id="fDesc" placeholder="一句话说明(可选)"></div>
+    <div class="frow"><label>分组</label><input id="fGroup" placeholder="工具" value="工具"></div>
+    <div class="frow"><label>图标(emoji)</label><input id="fIcon" placeholder="🧰" value="🧰"></div>
+    <div id="fAppRows">
+      <div class="frow"><label>启动命令(cmd)</label><input id="fCmd" placeholder='["node","server.mjs","8130"]'></div>
+      <div class="frow"><label>端口(8100~8199)</label><input id="fPort" type="number" placeholder="8130" min="8100" max="8199"></div>
+      <div class="frow"><label>健康检查路径(可选)</label><input id="fHealth" placeholder="/api/health"></div>
+    </div>
+    <div id="fLinkRows" style="display:none">
+      <div class="frow"><label>目标地址(url)</label><input id="fUrl" placeholder="http://192.168.1.100:8096"></div>
+    </div>
+    <div class="frow"><label>tool.json 预览</label><div class="preview" id="fPreview">{ }</div></div>
+    <div class="facts">
+      <button class="btn ghost" onclick="closeAdd()">取消</button>
+      <button class="btn" onclick="saveAdd()">保存并启用</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -77,6 +122,7 @@ async function load(){
     const downN = tools.filter(t=>t.status&&t.status.status==="error").length;
     $("meta").textContent = "共 " + tools.length + " 个工具 · 点右上角刷新状态";
     $("stats").innerHTML =
+      `<button class="btn ghost" onclick="openAdd()">＋ 添加工具</button>` +
       `<button class="btn" onclick="load()">刷新</button>` +
       `<span class="chip">🧰 ${tools.length} 工具</span>` +
       `<span class="chip">📦 ${appN} 托管</span>` +
@@ -106,7 +152,7 @@ function cardHtml(t){
     <div class="card-top"><span class="ic">${t.icon}</span><span class="tag ${tagCls}">${tagTxt}</span></div>
     <div class="card-name">${t.name}</div>
     <div class="card-desc">${t.desc || "—"}${err ? `<br><span style="color:var(--bad)">⚠ ${err}</span>` : ""}</div>
-    <div class="card-foot"><span><span class="dot ${dotCls}"></span>${statusTxt(t)}</span><span>${t.type==="app" ? ":"+t.port : ""}</span></div>
+    <div class="card-foot"><span><span class="dot ${dotCls}"></span>${statusTxt(t)}</span><span>${t.type==="app" ? ":"+t.port : ""}<button class="del-btn" title="删除工具" onclick="event.stopPropagation();delTool('${t.id}','${t.name}')">🗑</button></span></div>
   </div>`;
 }
 function statusTxt(t){
@@ -124,6 +170,73 @@ document.addEventListener("click", (e)=>{
   if(!t) return;
   window.open(t.type==="link" ? t.url : "/tool/"+t.id, "_blank");
 });
+
+// ---- 在线添加工具 ----
+let addType = "app";
+function openAdd(){ $("addMask").classList.add("show"); updatePreview(); }
+function closeAdd(){ $("addMask").classList.remove("show"); }
+function setType(t){
+  addType = t;
+  $("ftApp").classList.toggle("on", t==="app");
+  $("ftLink").classList.toggle("on", t==="link");
+  $("fAppRows").style.display = t==="app" ? "" : "none";
+  $("fLinkRows").style.display = t==="link" ? "" : "none";
+  updatePreview();
+}
+function collectSpec(){
+  const spec = {
+    id: ($("fId").value||"").trim(),
+    name: ($("fName").value||"").trim(),
+    desc: ($("fDesc").value||"").trim(),
+    group: ($("fGroup").value||"工具").trim(),
+    icon: ($("fIcon").value||"🧰").trim(),
+    type: addType,
+  };
+  if(addType==="link"){
+    spec.url = ($("fUrl").value||"").trim();
+  }else{
+    let cmd = [];
+    try { const c = JSON.parse($("fCmd").value||"[]"); if(Array.isArray(c)) cmd = c; } catch {}
+    spec.cmd = cmd;
+    spec.port = parseInt($("fPort").value||"0",10) || undefined;
+    const h = ($("fHealth").value||"").trim();
+    if(h) spec.health = h;
+  }
+  return spec;
+}
+function updatePreview(){
+  const spec = collectSpec();
+  $("fPreview").textContent = JSON.stringify(spec, null, 2);
+}
+["fId","fName","fDesc","fGroup","fIcon","fCmd","fPort","fHealth","fUrl"].forEach((id)=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener("input", updatePreview);
+});
+async function saveAdd(){
+  const spec = collectSpec();
+  if(!spec.id || !spec.name){ toast("⚠️ 请填写 id 和名称"); return; }
+  if(spec.type==="link" && !/^https?:\/\//.test(spec.url||"")){ toast("⚠️ link 型需 http(s) 地址"); return; }
+  if(spec.type==="app" && (!Array.isArray(spec.cmd)||!spec.cmd.length)){ toast("⚠️ app 型需启动命令"); return; }
+  if(spec.type==="app" && !spec.port){ toast("⚠️ app 型需端口(8100~8199)"); return; }
+  try{
+    const j = await (await fetch("/api/tools", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(spec) })).json();
+    if(!j.ok) throw new Error(j.error||"创建失败");
+    closeAdd();
+    ["fId","fName","fDesc","fCmd","fPort","fHealth","fUrl"].forEach((id)=>{ const el=document.getElementById(id); if(el) el.value=""; });
+    toast("✅ 工具已添加并启用");
+    load();
+  }catch(e){ toast("❌ "+e.message); }
+}
+async function delTool(id, name){
+  if(!confirm(`确认删除工具「${name}」?\n将删除 tools/${id} 目录(含 tool.json),不可恢复。`)) return;
+  try{
+    const j = await (await fetch("/api/tools", { method:"DELETE", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ id }) })).json();
+    if(!j.ok) throw new Error(j.error||"删除失败");
+    toast("🗑 已删除");
+    load();
+  }catch(e){ toast("❌ "+e.message); }
+}
+document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeAdd(); });
 
 load();
 </script>

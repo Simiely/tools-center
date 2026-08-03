@@ -4,7 +4,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { CONFIG, DIRS } from "./lib/config.js";
-import { scanTools, listTools, getTool } from "./lib/registry.js";
+import { scanTools, listTools, getTool, createTool, removeTool } from "./lib/registry.js";
 import * as manager from "./lib/manager.js";
 import { proxyRequest } from "./lib/proxy.js";
 import { readLog } from "./lib/logger.js";
@@ -37,6 +37,34 @@ const server = http.createServer(async (req, res) => {
     // ---- API ----
     if (url.pathname === "/api/tools" && req.method === "GET") {
       return json(200, { ok: true, tools: listTools().map(publicTool) });
+    }
+    // 在线创建工具(自助接入):body = tool.json 完整内容
+    if (url.pathname === "/api/tools" && req.method === "POST") {
+      let spec;
+      try { spec = JSON.parse((await body()) || "{}"); } catch { return json(400, { ok: false, error: "JSON 解析失败" }); }
+      try {
+        const t = createTool(spec);
+        manager.sync(); // 启动新工具
+        return json(201, { ok: true, tool: publicTool(t) });
+      } catch (e) {
+        return json(400, { ok: false, error: e.message });
+      }
+    }
+    // 在线删除工具
+    if (url.pathname === "/api/tools" && req.method === "DELETE") {
+      let id = "";
+      try { id = String(JSON.parse((await body()) || "{}").id || ""); } catch {}
+      if (!id) return json(400, { ok: false, error: "缺少 id" });
+      try {
+        // 先停子进程(否则 Windows 下目录被占用,rmdir EBUSY),再删
+        const t = getTool(id);
+        if (t && t.type === "app") await manager.stop(t);
+        removeTool(id);
+        manager.sync();
+        return json(200, { ok: true, removed: id });
+      } catch (e) {
+        return json(400, { ok: false, error: e.message });
+      }
     }
     if (url.pathname === "/api/reload" && req.method === "POST") {
       scanTools();
