@@ -88,6 +88,43 @@ const server = http.createServer(async (req, res) => {
       const lines = Math.min(parseInt(url.searchParams.get("lines") || "200", 10) || 200, 1000);
       return json(200, { ok: true, id, lines: readLog(id, lines) });
     }
+    // 通用文件上传: multipart 或 JSON {path, content}
+    if (url.pathname === "/api/files" && req.method === "POST") {
+      const raw = req.headers["content-type"] || "";
+      if (raw.includes("multipart/form-data")) {
+        // 解析简单 multipart(无第三方库,手写最小解析)
+        const boundary = "--" + raw.split("boundary=")[1]?.trim();
+        if (!boundary) return json(400, { ok: false, error: "缺少 boundary" });
+        const chunks = []; for await (const c of req) chunks.push(c);
+        const buf = Buffer.concat(chunks).toString("binary");
+        const parts = buf.split(boundary).slice(1, -1);
+        let target = "", content = "";
+        for (const p of parts) {
+          const [header, ...bodyLines] = p.replace(/^\r?\n/, "").split("\r\n\r\n");
+          const nameMatch = header.match(/name="([^"]+)"/);
+          if (!nameMatch) continue;
+          const body = bodyLines.join("\r\n\r\n").replace(/\r?\n--$/, "");
+          if (nameMatch[1] === "path") target = body.trim();
+          if (nameMatch[1] === "file") content = body;
+        }
+        if (!target) return json(400, { ok: false, error: "缺少 path" });
+        const dest = path.resolve(DIRS.tools, "..", target); // 限定在 tools/ 和 data/ 同级
+        const root = path.resolve(DIRS.tools, "..");
+        if (dest !== root && !dest.startsWith(root + path.sep)) return json(400, { ok: false, error: "路径越界" });
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.writeFileSync(dest, Buffer.from(content, "binary"));
+        return json(200, { ok: true, path: target });
+      }
+      // JSON 模式(兼容旧)
+      const j = JSON.parse((await body()) || "{}");
+      if (!j.path) return json(400, { ok: false, error: "缺少 path" });
+      const dest = path.resolve(DIRS.tools, "..", j.path);
+      const root = path.resolve(DIRS.tools, "..");
+      if (dest !== root && !dest.startsWith(root + path.sep)) return json(400, { ok: false, error: "路径越界" });
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, j.content ?? "", j.encoding === "base64" ? "base64" : "utf8");
+      return json(200, { ok: true, path: j.path });
+    }
     // /api/tools/<id> 与 /api/tools/<id>/restart、/upload
     if (url.pathname.startsWith("/api/tools/")) {
       const parts = url.pathname.split("/"); // ["","api","tools",id,maybe action]
