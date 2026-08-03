@@ -15,23 +15,18 @@
 ## 快速开始
 
 ```bash
-# 1. 启动(开发环境)
-node server.mjs                # 打开 http://127.0.0.1:8080(PORT 可覆盖)
+# 开发环境
+node server.mjs                # http://127.0.0.1:8080
 
-# 2. 添加一个工具(两种方式任选)
-#    网页:首页右上角「＋ 添加工具」→ 填名称 → 保存(自动生成/自动分配端口/生成示例)
-#    手动:放目录 + 写 tool.json
-mkdir -p tools/my-tool
-cat > tools/my-tool/tool.json <<'EOF'
-{ "id": "my-tool", "name": "我的工具", "type": "app",
-  "cmd": ["node", "server.mjs", "8123"], "port": 8123 }
-EOF
-
-# 3. 刷新首页 → 卡片自动出现并启动(放目录即出,无需 reload)
+# Docker(从 GitHub Container Registry 拉取)
+docker pull ghcr.io/simiely/tools-center:main
+docker compose up -d           # http://localhost:8080
 ```
 
-> 📖 **怎么接入你自己的小工具**(app 托管 / link 跳转、在线添加、字段速查、子路径挂载约定、NAS 部署):
-> 见 [`docs/使用指南.md`](docs/使用指南.md)
+**添加工具**(3 种方式):
+- 网页:首页「＋ 添加工具」→ 填名称 → 保存(可附带上传 **zip 包自动解压**)
+- 手动:`tools/<id>/` 放目录 + 写 `tool.json` → 刷新
+- API:`POST /api/files` 上传文件到 `tools/` 或 `data/` 目录
 
 NAS 部署(群晖 Container Manager / Docker Compose)步骤见 [`DEVELOPMENT.md`](DEVELOPMENT.md)。
 

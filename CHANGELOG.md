@@ -2,6 +2,19 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.5.0 (2026-08-03) · 上传增强 + CI 构建
+
+### 新增
+- **通用文件上传** `POST /api/files`:支持 multipart 和 JSON 两种模式,路径限定在 tools/data 目录
+- **zip 自动解压**:上传 .zip 包自动 `unzip` 到目标目录后删除压缩包
+- **GitHub Actions CI**:推 main 自动构建 Docker 镜像推送到 `ghcr.io/simiely/tools-center`
+- Docker 镜像预装 `unzip` + 预置 `wb-credits` 积分工具(构建时 clone)
+
+### 变更
+- `docker-compose.yml` 指向 ghcr.io 远程镜像(不再依赖本地 build)
+- 文档:README 补 Docker 拉取说明,使用指南补 `/api/files` 接口 + zip 上传说明
+
+## v0.4.7 (2026-08-03) · 子路径 301 规范化
 ## v0.4.7 (2026-08-03) · /tool/<id> 无尾斜杠 301 规范化
 
 **修复:从首页卡片打开工具(无尾斜杠)后 JS/资源 404、按钮失效。**
