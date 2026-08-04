@@ -48,6 +48,63 @@ docker compose up -d
 
 **关键**：iStoreOS 默认 fake-ip DNS 模式会让容器内部 `workbuddy.cn` 等外网域名解析失败（拿 198.18.x.x 假地址）。compose 已指定公共 DNS（223.5.5.5 / 119.29.29.29）绕过此问题。
 
+### 完整 NAS 部署示例（隐私路径已用 xxx 占位）
+
+> 这是个人 NAS 部署的完整 compose（字段含义见行内注释）。**替换 `xxx` 为你的实际路径/端口**后保存为 `docker-compose.yml` 使用。
+
+```yaml
+services:
+  web:
+    # 预先构建并推送到镜像仓库的镜像（push main 自动构建，见 .github/workflows/docker-build.yml）。
+    # 标签固定为 :main（随 main 分支更新）。
+    image: ghcr.io/simiely/tools-center:main
+    container_name: tools-center
+    # Dockerfile 默认用非 root 用户 node，但挂载卷权限在 host mount 下可能报权限问题。
+    # 家庭内网部署用 root 运行最简单可靠。
+    user: root
+    ports:
+      # 主程序端口：http://<NAS-IP>:xxx（自定义，默认 2626）
+      - "xxx:8080"
+      # 如需直连工具端口段（如 wb-credits 8123），取消注释：
+      # - "8123:8123"
+    environment:
+      # 主程序端口（容器内 8080，镜像默认值，无需改）
+      - PORT=8080
+      # 管理员密码：首次访问网页时设置（存储为 sha256，不落明文）。
+      # 不设环境变量也行——首次打开页面会弹窗引导设置。
+      # - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+    # 关键：绕过路由器上的 Clash fake-ip DNS（198.18.x.x 假地址）。
+    # 若 iStoreOS/OpenWrt 开了 fake-ip 模式，容器默认 DNS 会拿到假 IP，
+    # 容器直连假 IP 必然超时（workbuddy 查询 8s 超时即此因）。
+    dns:
+      - 223.5.5.5
+      - 119.29.29.29
+    volumes:
+      # 工具目录：挂载后可手动新增工具（tools/<id>/ + manifest.json/tool.json），
+      # 也可用网页「+ 添加」在线创建。xxx = NAS 上的实际路径，如 /mnt/usb2/Configs/tools-center/tools
+      - xxx:/app/tools
+      # 运行时数据：管理员密码 hash、日志、备份等
+      - xxx:/app/data
+      # （可选）独立工具仓库直接挂载：工具代码保持独立 git 维护，平台以 app 型托管
+      # xxx = 工具仓库在 NAS 上的路径，如 /mnt/usb2/Configs/workbuddy-credits-tool
+      # - xxx:/app/tools/wb-credits
+    restart: unless-stopped
+    # Dpanel "更新" = restart，不加 pull_policy 不拉新镜像
+    pull_policy: always
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/tools').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+```
+
+> **⚠️ 提示**：旧版示例里的 `init` 服务（构建时 clone wb-credits 内置到 tools/）**已废弃**——违反"工具独立仓库、独立部署"原则。正确做法：
+> 1. 在 NAS 上 `git clone https://github.com/Simiely/workbuddy-credits-tool.git <路径>/wb-credits`
+> 2. 在上方 compose 的 volumes 里挂载该路径到 `/app/tools/wb-credits`
+> 3. 平台自动识别其 `tool.json`/`manifest.json` 并托管运行
+> 或直接用网页「Git 导入」添加，无需改 compose。
+
 ### Windows（Docker Desktop）
 
 ```powershell
