@@ -10,7 +10,7 @@ import { scanTools, listTools, getTool, createTool, removeTool } from "./lib/cor
 import * as manager from "./lib/core/manager.js";
 import { proxyRequest } from "./lib/core/proxy.js";
 import { readLog } from "./lib/core/logger.js";
-import { capabilitiesStatus } from "./lib/core/capability.js";
+import { capabilitiesStatus, ensureCapability } from "./lib/core/capability.js";
 import { initCapabilities } from "./lib/capabilities/index.js";
 
 const ADMIN_PASS_FILE = path.join(DIRS.data, "admin-pass.json");
@@ -44,8 +44,8 @@ function resolveWithinRoot(rel) {
   return dest;
 }
 
+await initCapabilities();   // 先注册能力模块(工具扫描时 checkCapabilities 依赖)
 scanTools();
-initCapabilities();   // 注册内置能力模块(懒加载骨架)
 manager.startAll();
 manager.startHealthLoop();
 
@@ -127,6 +127,16 @@ const server = http.createServer(async (req, res) => {
     // 能力模块状态(懒加载:idle/running 等,门户展示)
     if (url.pathname === "/api/capabilities" && req.method === "GET") {
       return json(200, { ok: true, capabilities: capabilitiesStatus() });
+    }
+    // 能力懒加载触发:POST /api/capabilities/<name>/ensure → 启动模块并返回基址(SDK 调用)
+    if (url.pathname.startsWith("/api/capabilities/") && url.pathname.endsWith("/ensure") && req.method === "POST") {
+      const name = decodeURIComponent(url.pathname.split("/")[3]);
+      try {
+        const info = await ensureCapability(name);
+        return json(200, { ok: true, ...info });
+      } catch (e) {
+        return json(400, { ok: false, error: e.message });
+      }
     }
     // 管理员密码:状态查询 + 首次设置
     if (url.pathname === "/api/admin/pass") {
