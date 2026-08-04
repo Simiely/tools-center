@@ -17,3 +17,4 @@ tools/*/data/
 .DS_Store
 Thumbs.db
 node_modules/
+docker-compose.local.yml

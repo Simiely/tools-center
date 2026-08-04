@@ -28,7 +28,7 @@ services:
       - 119.29.29.29
     volumes:
       # 工具目录：挂载后可手动新增工具（tools/<id>/ + tool.json），
-      # 也可用网页「+ 添加」在线创建。首次启动前需放入内置工具，见下方 init 服务。
+      # 也可用网页「+ 添加」在线创建。首屏默认空，工具独立部署后用 link 卡片接入。
       - /mnt/usb2/Configs/tools-center/tools:/app/tools
       # 运行时数据：管理员密码 hash、日志等
       - /mnt/usb2/Configs/tools-center/data:/app/data
@@ -41,21 +41,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-
-  # 一次性初始化：首次部署时把内置工具（wb-credits 等）clone 进挂载的 tools/。
-  # 运行一次后此服务即退出（restart: "no"），后续更新工具用「git pull」或网页在线添加。
-  init:
-    image: alpine/git:latest
-    container_name: tools-center-init
-    volumes:
-      - /mnt/usb2/Configs/tools-center/tools:/tools
-    command: >
-      sh -c "
-        mkdir -p /tools/wb-credits &&
-        if [ ! -f /tools/wb-credits/tool.json ]; then
-          git clone --depth 1 https://github.com/Simiely/workbuddy-credits-tool.git /tmp/wb-credits &&
-          cp -r /tmp/wb-credits/. /tools/wb-credits/ &&
-          rm -rf /tools/wb-credits/.git /tmp/wb-credits
-        fi
-      "
-    restart: "no"

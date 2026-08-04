@@ -45,8 +45,12 @@ NAS 部署(群晖 Container Manager / Docker Compose)步骤见 [`DEVELOPMENT.md`
 
 ## 首批工具矩阵(规划)
 
-| 工具 | 类型 | 来源 |
+> **独立性原则**：各工具保持独立仓库、独立部署（独立容器/进程），tools-center 只做统一入口。
+> `app` 型 = 工具代码独立挂载到 `tools/<id>/`（代码不入仓库、独立更新）；`link` 型 = 工具独立运行，这里只放一张跳转卡片。
+
+| 工具 | 接入方式 | 说明 |
 |---|---|---|
-| 积分仪表盘 | app | [workbuddy-credits-tool](https://github.com/Simiely/workbuddy-credits-tool)(已有) |
+| 积分仪表盘 | link | [workbuddy-credits-tool](https://github.com/Simiely/workbuddy-credits-tool) 独立部署后，加一张卡片跳转 |
 | 微信读书购书工作台 | app | weread-budget-extension 服务化(待建) |
 | NAS 现有服务(Jellyfin 等) | link | 一张卡片接入 |
+
