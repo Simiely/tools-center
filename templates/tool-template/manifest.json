@@ -1,0 +1,12 @@
+{
+  "id": "my-tool",
+  "name": "我的工具",
+  "desc": "一句话说明这个工具做什么",
+  "group": "工具",
+  "icon": "🔧",
+  "runtime": "node",
+  "capabilities": ["storage"],
+  "entry": "server.mjs",
+  "port": 8150,
+  "health": "/health"
+}

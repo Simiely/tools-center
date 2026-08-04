@@ -131,10 +131,16 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="ftype">
       <button id="ftApp" class="on" onclick="setType('app')">托管进程</button>
       <button id="ftLink" onclick="setType('link')">外部跳转</button>
+      <button id="ftGit" onclick="setType('git')">Git 导入</button>
     </div>
     <div class="frow"><label>名称</label><input class="finput" id="fName" placeholder="我的工具"></div>
     <div id="fLinkRows" style="display:none">
       <div class="frow"><label>目标地址</label><input class="finput" id="fUrl" placeholder="http://..."></div>
+    </div>
+    <div id="fGitRows" style="display:none">
+      <div class="tip">从 Git 仓库导入：自动识别 manifest.json/tool.json（根目录或一级子目录），克隆后立即托管运行。</div>
+      <div class="frow"><label>仓库地址</label><input class="finput" id="fGitUrl" placeholder="https://github.com/user/repo.git"></div>
+      <div class="frow"><label>分支（可选）</label><input class="finput" id="fGitBranch" placeholder="main / 留空默认"></div>
     </div>
     <div id="fAppRows">
       <div class="tip">自动分配端口并生成示例。<b style="color:var(--brand)">可选 zip 自动解压</b></div>
@@ -163,6 +169,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
       </div>
     </div>
     <div class="frow"><label>预览</label><div class="preview" id="fPreview">{ }</div></div>
+    <div class="frow" style="align-items:flex-start"><label></label><button class="btn" onclick="validateManifestUI()" style="width:auto">✓ 校验配置</button><div id="fValidateResult" style="display:none;margin-left:8px;font-size:12px;padding-top:7px"></div></div>
     <div class="acts">
       <button class="btn" onclick="closeAdd()">取消</button>
       <button class="btn primary" onclick="saveAdd()">保存并启用</button>
@@ -257,8 +264,9 @@ let addType="app",advOpen=!1;
 function openAdd(){$("addMask").classList.add("show");updatePreview()}
 function closeAdd(){$("addMask").classList.remove("show")}
 function toggleAdv(){advOpen=!advOpen;$("fAdv").style.display=advOpen?"":"none";$("advBtn").textContent=(advOpen?"▾":"▸")+" 高级设置";updatePreview()}
-function setType(t){addType=t;$("ftApp").classList.toggle("on",t==="app");$("ftLink").classList.toggle("on",t==="link");$("fAppRows").style.display=t==="app"?"":"none";$("fLinkRows").style.display=t==="link"?"":"none";$("fAdvApp").style.display=t==="app"?"":"none";updatePreview()}
+function setType(t){addType=t;$("ftApp").classList.toggle("on",t==="app");$("ftLink").classList.toggle("on",t==="link");$("ftGit").classList.toggle("on",t==="git");$("fAppRows").style.display=t==="app"?"":"none";$("fLinkRows").style.display=t==="link"?"":"none";$("fGitRows").style.display=t==="git"?"":"none";$("fAdvApp").style.display=t==="app"?"":"none";updatePreview()}
 function collectSpec(){
+  if(addType==="git")return {git:true,name:($("fName").value||"").trim(),url:($("fGitUrl").value||"").trim(),branch:($("fGitBranch").value||"").trim(),id:$("fId").value.trim()};
   const s={name:($("fName").value||"").trim(),type:addType};
   if(addType==="link")s.url=($("fUrl").value||"").trim();
   const a={id:$("fId").value.trim(),desc:$("fDesc").value.trim(),group:$("fGroup").value.trim(),icon:$("fIcon").value.trim(),cmd:$("fCmd").value.trim(),port:$("fPort").value.trim(),health:$("fHealth").value.trim()};
@@ -266,8 +274,8 @@ function collectSpec(){
   if(addType==="app"){if(a.cmd){try{const c=JSON.parse(a.cmd);if(Array.isArray(c))s.cmd=c}catch{}}if(a.port)s.port=parseInt(a.port,10);if(a.health)s.health=a.health}
   return s
 }
-function updatePreview(){$("fPreview").textContent=JSON.stringify(collectSpec(),null,2)}
-["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",updatePreview)});
+function updatePreview(){const s=collectSpec();$("fPreview").textContent=s.git?`Git 导入: ${s.url||"(未填)"}`:JSON.stringify(s,null,2)}
+["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth","fGitUrl","fGitBranch"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",updatePreview)});
 
 let selZip=null;
 function pickZip(){$("fZipInput").value="";$("fZipInput").click()}
@@ -277,16 +285,44 @@ async function uploadZipTo(id,zip){const fd=new FormData();fd.append("path","too
 async function saveAdd(){
   const spec=collectSpec();
   if(!spec.name){toast("请填写名称");return}
-  if(spec.type==="link"&&!/^https?:\/\//.test(spec.url||"")){toast("link 型需 http(s) 地址");return}
   try{
-    const j=await(await fetch("/api/tools",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(spec)})).json();
+    let j;
+    if(spec.git){
+      if(!/^https?:\/\//.test(spec.url||"")){toast("Git 仓库需 http(s) 地址");return}
+      j=await(await fetch("/api/tools/import",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:spec.url,branch:spec.branch||undefined,id:spec.id||undefined})})).json();
+    }else{
+      if(spec.type==="link"&&!/^https?:\/\//.test(spec.url||"")){toast("link 型需 http(s) 地址");return}
+      j=await(await fetch("/api/tools",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(spec)})).json();
+    }
     if(!j.ok)throw new Error(j.error);
     const id=j.tool&&j.tool.id;
     if(spec.type==="app"&&id&&selZip)await uploadZipTo(id,selZip);
-    closeAdd();["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth"].forEach(x=>{const el=document.getElementById(x);if(el)el.value=""});
+    closeAdd();["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth","fGitUrl","fGitBranch"].forEach(x=>{const el=document.getElementById(x);if(el)el.value=""});
     selZip=null;$("fZipInfo").textContent="未选择";
     toast("已创建");load()
   }catch(e){toast(e.message)}
+}
+
+// manifest 在线校验(不写盘):POST 内容 → 显示错误/归一化结果
+async function validateManifestUI(){
+  const v=($("fCmd").value||"").trim();
+  let spec=collectSpec();
+  if(spec.git){toast("Git 模式无需校验");return}
+  if(v&&!spec.cmd){try{spec.cmd=JSON.parse(v)}catch{toast("启动命令需 JSON 数组,如 [\"node\",\"server.mjs\"]");return}}
+  const show=document.getElementById("fValidateResult");
+  try{
+    const j=await(await fetch("/api/tools/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({manifest:spec})})).json();
+    if(show){
+      if(j.ok){
+        const n=j.normalized||{};
+        show.innerHTML=`<span style="color:var(--ok,#2ea043)">✓ 配置有效</span> · ${n.type}${n.port?" · :"+n.port:""}${n.capabilities&&n.capabilities.length?" · 能力: "+n.capabilities.join("/"):""}${n.runtime?" · "+n.runtime:""}`;
+        show.style.display="block";show.style.color="";
+      }else{
+        show.innerHTML=`<span style="color:#d1242f">✕ ${(j.errors||[]).join("; ")}</span>`;
+        show.style.display="block";
+      }
+    }else toast(j.ok?"✓ 配置有效":(j.errors||[]).join("; "));
+  }catch(e){toast("校验失败: "+e.message)}
 }
 
 let cfmResolve=null;

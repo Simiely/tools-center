@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { CONFIG, DIRS } from "./lib/core/config.js";
-import { scanTools, listTools, getTool, createTool, removeTool } from "./lib/core/registry.js";
+import { scanTools, listTools, getTool, createTool, removeTool, importFromGit, validateManifest } from "./lib/core/registry.js";
 import * as manager from "./lib/core/manager.js";
 import { proxyRequest } from "./lib/core/proxy.js";
 import { readLog } from "./lib/core/logger.js";
@@ -117,6 +117,27 @@ const server = http.createServer(async (req, res) => {
         removeTool(id);
         manager.sync();
         return json(200, { ok: true, removed: id });
+      } catch (e) {
+        return json(400, { ok: false, error: e.message });
+      }
+    }
+    // manifest 在线校验(不写盘):POST /api/tools/validate  body={manifest}
+    if (url.pathname === "/api/tools/validate" && req.method === "POST") {
+      let raw;
+      try { raw = JSON.parse((await body()) || "{}"); } catch { return json(400, { ok: false, error: "JSON 解析失败" }); }
+      const spec = raw.manifest || raw;
+      const r = validateManifest(spec);
+      return json(r.ok ? 200 : 400, { ok: r.ok, errors: r.errors, normalized: r.normalized });
+    }
+    // 从 Git 导入工具:POST /api/tools/import  body={url, id?, branch?}
+    if (url.pathname === "/api/tools/import" && req.method === "POST") {
+      let b;
+      try { b = JSON.parse((await body()) || "{}"); } catch { return json(400, { ok: false, error: "JSON 解析失败" }); }
+      if (!b.url) return json(400, { ok: false, error: "缺少 url" });
+      try {
+        const t = await importFromGit(String(b.url), String(b.id || ""), { branch: b.branch ? String(b.branch) : undefined });
+        manager.sync();
+        return json(201, { ok: true, tool: publicTool(t) });
       } catch (e) {
         return json(400, { ok: false, error: e.message });
       }
