@@ -5,11 +5,13 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { CONFIG, DIRS } from "./lib/config.js";
-import { scanTools, listTools, getTool, createTool, removeTool } from "./lib/registry.js";
-import * as manager from "./lib/manager.js";
-import { proxyRequest } from "./lib/proxy.js";
-import { readLog } from "./lib/logger.js";
+import { CONFIG, DIRS } from "./lib/core/config.js";
+import { scanTools, listTools, getTool, createTool, removeTool } from "./lib/core/registry.js";
+import * as manager from "./lib/core/manager.js";
+import { proxyRequest } from "./lib/core/proxy.js";
+import { readLog } from "./lib/core/logger.js";
+import { capabilitiesStatus } from "./lib/core/capability.js";
+import { initCapabilities } from "./lib/capabilities/index.js";
 
 const ADMIN_PASS_FILE = path.join(DIRS.data, "admin-pass.json");
 // 密码以 sha256 摘要存储(不落明文);loadAdminPass 返回摘要,校验时对输入同样摘要后比对
@@ -43,6 +45,7 @@ function resolveWithinRoot(rel) {
 }
 
 scanTools();
+initCapabilities();   // 注册内置能力模块(懒加载骨架)
 manager.startAll();
 manager.startHealthLoop();
 
@@ -53,6 +56,7 @@ function publicTool(t) {
   return {
     id: t.id, name: t.name, desc: t.desc, group: t.group, icon: t.icon,
     type: t.type, url: t.url, port: t.port, valid: t.valid, error: t.error, hidden: !!t.hidden,
+    capabilities: t.capabilities || [],
     status: manager.statusOf(t),
   };
 }
@@ -119,6 +123,10 @@ const server = http.createServer(async (req, res) => {
       scanTools();
       manager.sync();
       return json(200, { ok: true, total: listTools().length });
+    }
+    // 能力模块状态(懒加载:idle/running 等,门户展示)
+    if (url.pathname === "/api/capabilities" && req.method === "GET") {
+      return json(200, { ok: true, capabilities: capabilitiesStatus() });
     }
     // 管理员密码:状态查询 + 首次设置
     if (url.pathname === "/api/admin/pass") {
@@ -229,7 +237,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(CONFIG.PORT, "0.0.0.0", () => {
-  console.log(`Tools Center 已启动: http://127.0.0.1:${CONFIG.PORT}`);
+server.listen(parseInt(process.argv[2], 10) || CONFIG.PORT, "0.0.0.0", () => {
+  console.log(`Tools Center 已启动: http://127.0.0.1:${parseInt(process.argv[2], 10) || CONFIG.PORT}`);
   console.log(`工具目录: ${DIRS.tools}`);
 });

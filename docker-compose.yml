@@ -32,6 +32,8 @@ services:
       - /mnt/usb2/Configs/tools-center/tools:/app/tools
       # 运行时数据：管理员密码 hash、日志等
       - /mnt/usb2/Configs/tools-center/data:/app/data
+      # 积分仪表盘：挂载宿主独立仓库（git 独立维护），由平台以 app 型托管（edge-daemon 不托管）
+      - /path/to/workbuddy-credits-tool:/app/tools/wb-credits
     restart: unless-stopped
     # Dpanel "更新" = restart，不加 pull_policy 不拉新镜像
     pull_policy: always
