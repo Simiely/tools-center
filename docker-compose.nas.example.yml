@@ -1,0 +1,80 @@
+# ============================================================
+# Tools Center · NAS 部署示例配置
+# ------------------------------------------------------------
+# 这是完整可用的 docker-compose 配置模板。
+# 所有隐私信息（安装路径/端口）都用示意写法(/path/to/xxxx), 复制后替换即可。
+#
+# 使用步骤:
+#   1. 复制本文件为 docker-compose.yml
+#   2. 把 /path/to/xxxx 替换为你的实际路径(见下方说明)
+#   3. docker compose up -d
+#
+# 部署后访问: http://<NAS-IP>:<你的端口>/
+# ============================================================
+
+services:
+  web:
+    # 镜像: GitHub CI 自动构建并推送(push main 触发), 标签 :main 随 main 分支更新
+    image: ghcr.io/simiely/tools-center:main
+    container_name: tools-center
+
+    # Dockerfile 默认用非 root 用户 node, 但挂载卷在 host mount 下可能权限不足。
+    # 家庭内网部署用 root 运行最简单可靠。
+    user: root
+
+    ports:
+      # 主程序端口: http://<NAS-IP>:2626
+      # 2626 为示意值, 请改成你想对外访问的端口(如 2626/8080/3000 等)
+      - "2626:8080"
+      # 如需直连工具端口段(如 wb-credits 8123), 取消注释:
+      # - "8123:8123"
+
+    environment:
+      # 主程序端口(容器内固定 8080, 镜像默认值, 无需改)
+      - PORT=8080
+      # 管理员密码: 首次访问网页时弹窗设置(存 sha256, 不落明文)。
+      # 也可用环境变量预设:
+      # - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+
+    # 关键: 绕过路由器上的 Clash fake-ip DNS(198.18.x.x 假地址)。
+    # iStoreOS/OpenWrt 开 fake-ip 模式时, 容器默认 DNS 拿到假 IP 会超时。
+    # 指定公共 DNS 让容器解析到真实 IP 直连。
+    dns:
+      - 223.5.5.5
+      - 119.29.29.29
+
+    volumes:
+      # /path/to/xxxx = 工具目录在 NAS 上的实际路径 (示例: /mnt/usb2/Configs/tools-center/tools)
+      # 用途: 挂载后可手动新增工具(tools/<id>/ + manifest.json), 也可网页「+ 添加」
+      - /path/to/xxxx:/app/tools
+
+      # /path/to/xxxx = 数据目录在 NAS 上的实际路径 (示例: /mnt/usb2/Configs/tools-center/data)
+      # 用途: 管理员密码 hash / 日志 / 备份
+      - /path/to/xxxx:/app/data
+
+      # (可选) 独立工具仓库直接挂载 —— 推荐方式, 工具保持独立 git 维护
+      # /path/to/xxxx = 工具仓库在 NAS 上的路径 (示例: /mnt/usb2/Configs/workbuddy-credits-tool)
+      # 先在 NAS 上: git clone https://github.com/Simiely/workbuddy-credits-tool.git /path/to/xxxx
+      # - /path/to/xxxx:/app/tools/wb-credits
+
+    restart: unless-stopped
+    # Dpanel「更新」= restart, 不加 pull_policy 不拉新镜像
+    pull_policy: always
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/tools').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+# ------------------------------------------------------------
+# 隐私信息替换速查(本文件共 3 处 /path/to/xxxx):
+#   ① tools 挂载     → 工具目录路径 (示例: /mnt/usb2/Configs/tools-center/tools)
+#   ② data 挂载      → 数据目录路径 (示例: /mnt/usb2/Configs/tools-center/data)
+#   ③ wb-credits 挂载 → 积分工具仓库路径(可选, 若用该方式)
+# 端口值 2626 为示意, 按需修改(注释已标注)
+# ------------------------------------------------------------
+# 注意: 旧版曾用 init 服务把工具 clone 进 tools/ 内置, 已废弃
+# (违反工具独立仓库原则)。正确做法: 独立仓库挂载(上方 ③)或网页「Git 导入」。
+# ------------------------------------------------------------
