@@ -55,6 +55,29 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .del-btn{position:absolute;bottom:4px;right:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:var(--r2);opacity:.7;transition:.15s}
 .card:hover .del-btn,.del-btn:focus-visible{opacity:1}
 .del-btn:hover{color:var(--bad);background:#f8717114}
+/* 能力徽标(卡片右下) */
+.caps{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
+.cap-chip{font-size:8.5px;padding:1px 5px;border-radius:5px;border:1px solid var(--line2);color:var(--text2);letter-spacing:.3px}
+.cap-chip.browser{color:#60a5fa;border-color:#60a5fa44;background:#60a5fa10}
+.cap-chip.storage{color:#c084fc;border-color:#c084fc44;background:#c084fc10}
+.cap-chip.network{color:#34d399;border-color:#34d39944;background:#34d39910}
+/* 工具详情弹层 */
+.detail-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.detail-icon{width:52px;height:52px;border-radius:14px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;font-size:26px;flex-shrink:0}
+.detail-title{flex:1;min-width:0}
+.detail-title h2{font-size:16px;font-weight:600;word-break:break-word}
+.detail-title .d-sub{font-size:11px;color:var(--text2);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.detail-title .d-sub .dot-row{display:flex;align-items:center;gap:5px}
+.det-row{display:flex;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.det-row:last-child{border-bottom:none}
+.det-row .k{color:var(--text3);width:70px;flex-shrink:0}
+.det-row .v{color:var(--text);word-break:break-all;flex:1}
+.det-acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.log-box{background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--text2);white-space:pre-wrap;word-break:break-all;max-height:260px;overflow:auto;line-height:1.5;margin-top:4px}
+.log-empty{color:var(--text3);font-style:italic}
+.cap-line{margin-top:10px}
+.cap-line .caps{justify-content:flex-start;gap:6px}
+.cap-line .cap-chip{font-size:10px;padding:3px 8px}
 
 @media(min-width:500px){
   .card{padding:18px 14px 14px;gap:10px;border-radius:var(--r4)}
@@ -177,6 +200,33 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
   </div>
 </div>
 <input type="file" id="fZipInput" accept=".zip" hidden>
+
+<!-- 工具详情弹层 -->
+<div class="mask" id="detMask">
+  <div class="modal" style="max-width:460px">
+    <div class="detail-head">
+      <div class="detail-icon" id="detIcon">🔧</div>
+      <div class="detail-title">
+        <h2 id="detName">—</h2>
+        <div class="d-sub">
+          <span id="detType"></span>
+          <span class="dot-row"><span class="card-dot" id="detDot"></span><span id="detStatus"></span></span>
+        </div>
+      </div>
+    </div>
+    <div class="det-row"><span class="k">ID</span><span class="v" id="detId">—</span></div>
+    <div class="det-row"><span class="k">端口</span><span class="v" id="detPort">—</span></div>
+    <div class="det-row"><span class="k">能力</span><span class="v"><span class="caps" id="detCaps" style="justify-content:flex-start"></span></span></div>
+    <div class="det-row"><span class="k">错误</span><span class="v" id="detErr" style="color:var(--bad)">—</span></div>
+    <div class="det-row"><span class="k">日志</span><span class="v"><button class="btn sm" onclick="loadLog()">刷新日志</button></span></div>
+    <div class="log-box" id="detLog"><span class="log-empty">加载中…</span></div>
+    <div class="det-acts">
+      <button class="btn sm" id="detOpen" onclick="openToolDetail()">打开</button>
+      <button class="btn sm" id="detRestart" onclick="restartTool()" style="display:none">重启</button>
+      <button class="btn sm danger" onclick="closeDet()">关闭</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <div class="mask" id="cfmMask">
@@ -204,7 +254,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 const $=id=>document.getElementById(id);
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400)}
 
-let tools=[], activeCat="all";
+let tools=[], activeCat="all", activeCap="";
 
 async function load(){
   try{
@@ -221,16 +271,21 @@ async function load(){
 
 function renderTabs(){
   const cats=[...new Set(tools.map(t=>t.group||"工具"))];
+  const caps=[...new Set(tools.flatMap(t=>t.capabilities||[]))];
   $("tabs").querySelector(".tabs-inner").innerHTML=
-    `<button class="tab ${activeCat==="all"?"on":""}" data-cat="all" onclick="setCat('all')">全部</button>`+
-    cats.map(c=>`<button class="tab ${activeCat===c?"on":""}" data-cat="${c}" onclick="setCat(this.dataset.cat)">${c}</button>`).join("")
+    `<button class="tab ${activeCat==="all"&&!activeCap?"on":""}" data-cat="all" data-cap="" onclick="setCat('all','')">全部</button>`+
+    caps.map(c=>`<button class="tab ${activeCap===c?"on":""}" data-cap="${c}" onclick="setCat('', '${c}')">${capLabel(c)}</button>`).join("")+
+    cats.filter(c=>c!=="全部").map(c=>`<button class="tab ${activeCat===c?"on":""}" data-cat="${c}" onclick="setCat('${c}','')">${c}</button>`).join("")
 }
+function capLabel(c){return c==="browser"?"🌐 浏览器":c==="storage"?"💾 存储":c==="network"?"🌍 网络":c}
 
-function setCat(c){activeCat=c;renderTabs();renderCards()}
+function setCat(c,cap){activeCat=c;activeCap=cap;renderTabs();renderCards()}
 
 function renderCards(){
-  const filtered=activeCat==="all"?tools:tools.filter(t=>(t.group||"工具")===activeCat);
-  if(!filtered.length){$("main").innerHTML='<div class="empty"><div class="empty-icon">&#x1F50D;</div><p>此分类暂无工具</p></div>';return}
+  let filtered=tools;
+  if(activeCap)filtered=filtered.filter(t=>(t.capabilities||[]).includes(activeCap));
+  if(activeCat&&activeCat!=="all")filtered=filtered.filter(t=>(t.group||"工具")===activeCat);
+  if(!filtered.length){$("main").innerHTML='<div class="empty"><div class="empty-icon">&#x1F50D;</div><p>无匹配工具</p></div>';return}
   window.__tools=filtered;
   const groups={};
   for(const t of filtered)(groups[t.group||"工具"]=groups[t.group||"工具"]||[]).push(t);
@@ -242,11 +297,13 @@ function cardHtml(t){
   const st=t.status||{};
   const dotCls=t.type==="link"?"warn":(st.status==="running"?"ok":(st.status==="error"?"bad":"warn"));
   const stxt=t.type==="link"?"链接":(st.status==="running"?"运行":(st.status||"—"));
+  const caps=(t.capabilities||[]).map(c=>`<span class="cap-chip ${c}">${capLabel(c)}</span>`).join("");
   return`<div class="card" data-id="${t.id}">
     <span class="card-tag ${t.type==="app"?"hosted":"link"}">${t.type==="app"?"托管":"链接"}</span>
     <div class="card-icon">${t.icon||"&#x1F4E6;"}</div>
     <div class="card-name">${t.name}</div>
     <div class="card-desc">${t.desc||""}</div>
+    ${caps?`<div class="caps">${caps}</div>`:""}
     <div class="card-foot"><span class="card-dot ${dotCls}"></span>${stxt}</div>
     <button class="del-btn" onclick="event.stopPropagation();delTool('${t.id}','${t.name}')">&#x1F5D1;</button>
   </div>`
@@ -256,7 +313,7 @@ document.addEventListener("click",e=>{
   const card=e.target.closest(".card");
   if(!card)return;
   const t=(window.__tools||[]).find(x=>x.id===card.dataset.id);
-  if(t)window.open(t.type==="link"?t.url:"/tool/"+t.id+"/","_blank")
+  if(t)openDetail(t)
 });
 
 // Add tool
@@ -326,6 +383,49 @@ async function validateManifestUI(){
 }
 
 let cfmResolve=null;
+// ---------- 工具详情 ----------
+let curDetail=null, logTimer=null;
+function openDetail(t){
+  curDetail=t;
+  $("detIcon").textContent=t.icon||"🔧";
+  $("detName").textContent=t.name;
+  $("detId").textContent=t.id;
+  $("detType").textContent=t.type==="link"?"外部跳转":"托管进程";
+  $("detPort").textContent=t.type==="link"?(t.url||"—"):(t.port||"—");
+  const caps=(t.capabilities||[]).map(c=>`<span class="cap-chip ${c}">${capLabel(c)}</span>`).join("");
+  $("detCaps").innerHTML=caps||'<span style="color:var(--text3)">—</span>';
+  const st=t.status||{};
+  const stxt=t.type==="link"?"链接":(st.status==="running"?"运行中":(st.status==="stopped"?"已停止":(st.status||"—")));
+  $("detStatus").textContent=stxt+" "+(st.health==="ok"?"· 健康":"");
+  $("detDot").className="card-dot "+(t.type==="link"?"warn":(st.status==="running"?"ok":(st.status==="error"?"bad":"warn")));
+  $("detErr").textContent=t.error||st.error||"—";
+  $("detOpen").textContent=t.type==="link"?"打开链接":"打开界面";
+  $("detRestart").style.display=t.type==="app"?"":"none";
+  $("detMask").classList.add("show");
+  loadLog();
+}
+function closeDet(){$("detMask").classList.remove("show");curDetail=null;if(logTimer){clearTimeout(logTimer);logTimer=null}}
+function openToolDetail(){if(curDetail)window.open(curDetail.type==="link"?curDetail.url:"/tool/"+curDetail.id+"/","_blank")}
+async function loadLog(){
+  if(!curDetail)return;
+  const id=curDetail.id;
+  try{
+    const j=await(await fetch("/api/logs/"+id,{cache:"no-store"})).json();
+    const box=$("detLog");
+    if(j.ok&&j.lines&&j.lines.length)box.innerHTML=j.lines.map(l=>esc(l)).join("\n")||'<span class="log-empty">(空)</span>';
+    else box.innerHTML='<span class="log-empty">'+(j.error||"无日志")+"</span>";
+    box.scrollTop=box.scrollHeight;
+  }catch(e){$("detLog").innerHTML='<span class="log-empty">日志获取失败</span>'}
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+async function restartTool(){
+  if(!curDetail)return;
+  try{
+    const j=await(await fetch("/api/tools/"+curDetail.id+"/restart",{method:"POST"})).json();
+    if(!j.ok)throw new Error(j.error);
+    toast("已重启");setTimeout(()=>{loadLog();load()},1500)
+  }catch(e){toast(e.message)}
+}
 function cfmConfirm(msg){return new Promise(r=>{cfmResolve=r;$("cfmMsg").textContent=msg;$("cfmPass").value="";$("cfmMask").classList.add("show");setTimeout(()=>$("cfmPass").focus(),100)})}
 function closeCfm(ok){const pass=$("cfmPass").value;$("cfmMask").classList.remove("show");if(cfmResolve){cfmResolve(ok?pass:null);cfmResolve=null}}
 $("cfmOk").addEventListener("click",()=>closeCfm(!0));
@@ -337,7 +437,7 @@ async function setAdminPass(){const p=$("adminPass1").value;if(!p||p.length<4){t
 $("adminOk").addEventListener("click",setAdminPass);
 $("adminPass1").addEventListener("keydown",e=>{if(e.key==="Enter")setAdminPass()});
 checkAdminPass();
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAdd()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeAdd();closeDet()}});
 load();
 </script>
 </body>
