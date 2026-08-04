@@ -2,11 +2,13 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
-## v0.10.0 (2026-08-04) · 工具级备份/恢复(后端)
+## v0.10.0 (2026-08-04) · 工具级备份/恢复
 
 - **lib/core/zip.js**:零依赖 zip 打包/解包(Node 内置 zlib.crc32+deflateRaw),多目录合并打包、CRC 校验、防 zip-slip 路径穿越
 - **lib/core/toolbackup.js**:工具级备份(`tools/<id>/` 代码+数据全包 → `data/backups/tools-<ts>.zip`);勾选单/多工具恢复;目标已存在自动备份为 `<id>.pre-restore-*`;重扫自动重启
 - **API**:`POST/GET /api/tools/backup`(备份/列表)、`POST /api/tools/backup/restore`(恢复)、`GET /api/tools/backup/download`(下载 zip)
+- **前端**:顶栏「备份」按钮 + 弹窗(立即备份/备份列表含工具勾选/恢复所选/下载);api.js 封装 `apiToolBackup`
+- **文档**:docs/使用指南.md 新增「七·五 备份/恢复工具」章节
 - 测试:tests/zip.test.mjs(4)+tests/toolbackup.test.mjs(5),全量 29 用例通过
 - 端到端验证:备份 1MB→删除→恢复→工具重新运行+账号数据完整
 

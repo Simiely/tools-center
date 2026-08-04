@@ -154,7 +154,92 @@ async function changePass() {
 $("passOk").addEventListener("click", changePass);
 $("newPass1").addEventListener("keydown", e => { if (e.key === "Enter") changePass(); });
 
+/* ---------- 工具备份/恢复 ---------- */
+let tbBackups = [];       // 当前备份列表
+let tbSelected = {};      // { 备份file: { 工具id: 是否勾选 } }
+
+function openToolBackup() {
+  $("tbMask").classList.add("show");
+  tbRefresh();
+}
+function closeToolBackup() { $("tbMask").classList.remove("show"); }
+
+async function tbRefresh() {
+  $("tbList").innerHTML = '<div class="tip" style="text-align:center;padding:20px">加载中…</div>';
+  try {
+    const j = await apiToolBackup.list();
+    if (!j.ok) throw new Error(j.error);
+    tbBackups = j.backups || [];
+    renderTbList();
+  } catch (e) { $("tbList").innerHTML = '<div class="tip" style="text-align:center;padding:20px">' + esc(e.message) + '</div>'; }
+}
+
+function renderTbList() {
+  const wrap = $("tbList");
+  if (!tbBackups.length) { wrap.innerHTML = '<div class="tip" style="text-align:center;padding:20px">暂无备份,点击「立即备份」创建</div>'; return; }
+  tbSelected = {};
+  wrap.innerHTML = tbBackups.map((bk) => {
+    const ts = (bk.ts || "").replace("T", " ").replace("Z", "");
+    const sizeKB = Math.max(1, Math.round((bk.size || 0) / 1024));
+    const toolList = (bk.tools || []).map((id) =>
+      `<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 8px 2px 0;font-size:12px;cursor:pointer">
+        <input type="checkbox" data-bk="${esc(bk.file)}" data-tool="${esc(id)}" onchange="tbToggle(this)">
+        ${esc(id)}
+      </label>`).join("") || '<span style="color:var(--text3)">(空)</span>';
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:500">${esc(ts)}</span>
+        <span style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:var(--text3)">${sizeKB} KB · ${(bk.tools || []).length} 工具</span>
+          <a href="${apiToolBackup.downloadUrl(bk.file)}" download style="font-size:11px;color:var(--brand);text-decoration:none">下载</a>
+        </span>
+      </div>
+      <div style="font-size:12px">${toolList}</div>
+    </div>`;
+  }).join("");
+}
+
+function tbToggle(el) {
+  const bk = el.dataset.bk, tool = el.dataset.tool;
+  if (!tbSelected[bk]) tbSelected[bk] = {};
+  tbSelected[bk][tool] = el.checked;
+  $("tbRestoreBtn").disabled = !Object.values(tbSelected).some((m) => Object.values(m).some(Boolean));
+}
+
+async function tbCreate() {
+  const btn = $("tbCreateBtn");
+  btn.disabled = true; btn.textContent = "备份中…";
+  try {
+    const j = await apiToolBackup.create();
+    toast("备份完成: " + (j.tools || []).length + " 个工具");
+    await tbRefresh();
+  } catch (e) { toast(e.message); }
+  btn.disabled = false; btn.textContent = "立即备份";
+}
+
+async function tbRestoreSelected() {
+  // 收集勾选:按备份分组
+  const groups = [];
+  for (const [bk, m] of Object.entries(tbSelected)) {
+    const tools = Object.keys(m).filter((t) => m[t]);
+    if (tools.length) groups.push({ backup: bk, tools });
+  }
+  if (!groups.length) { toast("请先勾选要恢复的工具"); return; }
+  const total = groups.reduce((s, g) => s + g.tools.length, 0);
+  if (!confirm("从备份恢复 " + total + " 个工具?\n已存在的工具会先自动备份为 .pre-restore- 目录。")) return;
+  try {
+    let restored = 0;
+    for (const g of groups) {
+      const j = await apiToolBackup.restore(g.backup, g.tools);
+      restored += (j.restored || []).length;
+    }
+    toast("已恢复 " + restored + " 个工具");
+    closeToolBackup();
+    load();
+  } catch (e) { toast(e.message); }
+}
+
 /* ---------- 初始化 ---------- */
 checkAdminPass();
-document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeToolBackup(); } });
 load();

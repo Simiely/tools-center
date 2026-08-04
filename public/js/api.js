@@ -69,3 +69,19 @@ const apiPass = {
   set: (pass) => postJSON("/api/admin/pass", { pass }),
   change: (oldPass, newPass) => postJSON("/api/admin/pass/change", { oldPass, newPass }),
 };
+
+/** 工具级备份:执行备份 / 列表 / 恢复所选工具 / 下载 zip */
+const apiToolBackup = {
+  create: async () => {
+    const j = await (await fetch("/api/tools/backup", { method: "POST" })).json();
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
+  list: () => getJSON("/api/tools/backup"),
+  restore: async (backup, tools) => {
+    const j = await postJSON("/api/tools/backup/restore", { backup, tools });
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
+  downloadUrl: (file) => "/api/tools/backup/download?file=" + encodeURIComponent(file),
+};
