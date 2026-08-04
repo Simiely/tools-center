@@ -12,6 +12,7 @@ import { readLog } from "./lib/core/logger.js";
 import { capabilitiesStatus, ensureCapability } from "./lib/core/capability.js";
 import { initCapabilities } from "./lib/capabilities/index.js";
 import * as backup from "./lib/core/backup.js";
+import * as toolbackup from "./lib/core/toolbackup.js";
 import { loadSyncConfig, saveSyncConfig, testConnection } from "./lib/core/webdav.js";
 import { loadAdminPass, saveAdminPass, checkPass, changeAdminPass } from "./lib/core/auth.js";
 import { unzipAsync, resolveWithinRoot, parseMultipart, readBody, MAX_UPLOAD_BYTES } from "./lib/core/upload.js";
@@ -185,6 +186,46 @@ const routes = [
         const b = await jsonBody(req);
         if (!b.backup) return sendJson(res, 400, { ok: false, error: "缺少 backup(备份目录名)" });
         return sendJson(res, 200, { ok: true, ...backup.localRestore(b.backup) });
+      } catch (e) { return sendJson(res, 500, { ok: false, error: e.message }); }
+    },
+  },
+  // ---- API:工具级备份/恢复(代码+数据全包 zip) ----
+  {
+    m: "POST", p: "/api/tools/backup",
+    handler: (req, res) => {
+      try { return sendJson(res, 200, { ok: true, ...toolbackup.backupTools() }); }
+      catch (e) { return sendJson(res, 500, { ok: false, error: e.message }); }
+    },
+  },
+  {
+    m: "GET", p: "/api/tools/backup",
+    handler: (req, res) => {
+      try { return sendJson(res, 200, { ok: true, backups: toolbackup.listToolBackups() }); }
+      catch (e) { return sendJson(res, 500, { ok: false, error: e.message }); }
+    },
+  },
+  {
+    m: "POST", p: "/api/tools/backup/restore",
+    handler: async (req, res) => {
+      try {
+        const b = await jsonBody(req);
+        if (!b.backup) return sendJson(res, 400, { ok: false, error: "缺少 backup(备份文件名)" });
+        const r = toolbackup.restoreFromZip(String(b.backup), b.tools);
+        return sendJson(res, 200, { ok: true, ...r });
+      } catch (e) { return sendJson(res, 400, { ok: false, error: e.message }); }
+    },
+  },
+  {
+    m: "GET", p: "/api/tools/backup/download",
+    handler: (req, res, url) => {
+      try {
+        const name = String(url.searchParams.get("file") || "");
+        if (!name || !name.startsWith("tools-") || !name.endsWith(".zip")) return sendJson(res, 400, { ok: false, error: "非法备份文件名" });
+        const f = path.join(DIRS.data, "backups", path.basename(name));
+        if (!fs.existsSync(f)) return sendJson(res, 404, { ok: false, error: "备份不存在" });
+        const buf = fs.readFileSync(f);
+        res.writeHead(200, { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${name}"` });
+        return res.end(buf);
       } catch (e) { return sendJson(res, 500, { ok: false, error: e.message }); }
     },
   },

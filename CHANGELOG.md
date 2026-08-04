@@ -2,6 +2,14 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.10.0 (2026-08-04) · 工具级备份/恢复(后端)
+
+- **lib/core/zip.js**:零依赖 zip 打包/解包(Node 内置 zlib.crc32+deflateRaw),多目录合并打包、CRC 校验、防 zip-slip 路径穿越
+- **lib/core/toolbackup.js**:工具级备份(`tools/<id>/` 代码+数据全包 → `data/backups/tools-<ts>.zip`);勾选单/多工具恢复;目标已存在自动备份为 `<id>.pre-restore-*`;重扫自动重启
+- **API**:`POST/GET /api/tools/backup`(备份/列表)、`POST /api/tools/backup/restore`(恢复)、`GET /api/tools/backup/download`(下载 zip)
+- 测试:tests/zip.test.mjs(4)+tests/toolbackup.test.mjs(5),全量 29 用例通过
+- 端到端验证:备份 1MB→删除→恢复→工具重新运行+账号数据完整
+
 ## v0.9.0 (2026-08-04) · 安全边界 + 结构重构
 
 - **目录环境变量化**:`TOOLS_DIR`/`DATA_DIR` 覆盖默认目录(部署时显式写死扫描范围),compose 三件套同步更新
