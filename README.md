@@ -34,6 +34,7 @@ docker compose up -d           # http://localhost:2626
 | 文档 | 给谁看 | 内容 |
 |---|---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 开发者 | **当前架构主线**:主逻辑四条链路 + 支线辅助面 + 模块职责表 + 数据流 + API |
+| [`docs/security.md`](docs/security.md) | 部署者/开发者 | **安全边界**:信任模型、扫描范围、root 取舍、隔离方向 |
 | [`docs/使用指南.md`](docs/使用指南.md) | 用户 | **接入你的小工具**(app/link、在线添加、字段速查) |
 | [`docs/deploy-nas.md`](docs/deploy-nas.md) | 部署者 | **部署指南**(群晖/iStoreOS/Windows/Docker) + 故障排查 |
 | [`docker-compose.nas.example.yml`](docker-compose.nas.example.yml) | 部署者 | **NAS 完整部署配置模板**(隐私路径 `/path/to/xxxx` 占位,复制替换即用) |

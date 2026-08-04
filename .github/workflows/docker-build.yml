@@ -18,17 +18,9 @@ jobs:
       - name: Node syntax check (all modules + frontend JS)
         run: |
           set -e
-          for f in server.mjs lib/core/*.js lib/capabilities/*.js lib/capabilities/*/*.mjs lib/capabilities/*/*.js lib/sdk.js; do
+          for f in server.mjs lib/core/*.js lib/capabilities/*.js lib/capabilities/*/*.mjs lib/capabilities/*/*.js lib/sdk.js public/js/*.js; do
             node --check "$f"
           done
-          node -e "
-            const fs = require('fs'), re = /<script>([\s\S]*?)<\/script>/;
-            const html = fs.readFileSync('public/index.html', 'utf8');
-            const m = html.match(re);
-            if (!m) { console.error('index.html 无内联 script'); process.exit(1); }
-            fs.writeFileSync('/tmp/fe-check.js', m[1]);
-          "
-          node --check /tmp/fe-check.js
           echo "✅ 语法检查全部通过"
 
   build:

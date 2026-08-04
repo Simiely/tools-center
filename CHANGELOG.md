@@ -2,6 +2,15 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.9.0 (2026-08-04) · 安全边界 + 结构重构
+
+- **目录环境变量化**:`TOOLS_DIR`/`DATA_DIR` 覆盖默认目录(部署时显式写死扫描范围),compose 三件套同步更新
+- **修改密码接口**:`POST /api/admin/pass/change`(旧密码校验),前端顶栏新增「密码」入口,解决"设过一次就锁死"
+- **docs/security.md**:信任模型、扫描范围锁定、root 取舍、目录自动创建、未来隔离方向
+- **路由表重构**:`server.mjs` if/else 链 → `{ p/prefix/re, m, handler }` 注册表 + `matchRoute()`,行为完全一致
+- **前端模块化拆分**:`index.html` 内联 JS → `public/js/{api,ui,app}.js` 三文件(零依赖保持),新增 `/js/` 静态路由(防路径穿越)
+- 行为兼容:未设 env 时目录回退 `<root>/tools`、`<root>/data`(与历史一致)
+
 ## v0.8.2 (2026-08-04) · 架构文档 + 加固
 
 - **docs/ARCHITECTURE.md**:基于当前实现的架构文档(主逻辑四条链路 + 支线辅助面 + 模块职责表 + 数据流 + API + 开发指南)

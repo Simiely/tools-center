@@ -143,6 +143,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
       <span class="hdr-stat" id="stat">—</span>
       <button class="sm btn" onclick="load()">刷新</button>
       <span class="cap-pill" id="capStatus" onclick="openCapDetail()" title="点击查看能力状态"></span>
+      <button class="sm btn" onclick="openPass()" title="修改管理员密码">密码</button>
       <button class="sm btn primary" onclick="openAdd()">+ 添加</button>
     </div>
   </div>
@@ -266,235 +267,21 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
   </div>
 </div>
 
-<script>
-const $=id=>document.getElementById(id);
-function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400)}
+<div class="mask" id="passMask">
+  <div class="modal" style="max-width:340px">
+    <h2>修改管理员密码</h2>
+    <div class="tip">首次设置后可随时修改</div>
+    <input class="finput" id="oldPass" type="password" placeholder="旧密码">
+    <input class="finput" id="newPass1" type="password" placeholder="新密码(至少 4 位)" style="margin-top:8px">
+    <div class="acts">
+      <button class="btn" onclick="closePass()">取消</button>
+      <button class="btn primary" id="passOk">确认修改</button>
+    </div>
+  </div>
+</div>
 
-let tools=[], activeCat="all", activeCap="";
-
-async function load(){
-  try{
-    const j=await(await fetch("/api/tools",{cache:"no-store"})).json();
-    if(!j.ok)throw new Error(j.error);
-    tools=(j.tools||[]).filter(t=>!t.hidden);
-    renderTabs();
-    renderCards();
-    const running=tools.filter(t=>t.status&&t.status.status==="running").length;
-    $("stat").textContent=running+"/"+tools.length+" 运行";
-    $("meta").textContent=" · "+tools.length+" 工具";
-    loadCaps();  // 并行加载能力状态(更新顶栏指示器)
-  }catch(e){$("main").innerHTML=`<div class="empty"><div class="empty-icon">!</div><p>${e.message}</p></div>`}
-}
-
-async function loadCaps(){
-  try{
-    const j=await(await fetch("/api/capabilities",{cache:"no-store"})).json();
-    if(!j.ok)return;
-    const caps=j.capabilities||[];
-    const pill=$("capStatus");
-    const errors=caps.filter(c=>c.status==="error");
-    const running=caps.filter(c=>c.status==="running").length;
-    if(errors.length){
-      pill.textContent="⚠ "+errors.length+" 能力异常";
-      pill.className="cap-pill has-err";
-      pill.dataset.err=errors.map(c=>c.name+": "+(c.error||"未知")).join("\n");
-    }else{
-      const total=caps.length;
-      pill.textContent="✓ "+(total?running+"/"+total+" 能力":"无能力");
-      pill.className="cap-pill "+(running?"all-ok":"");
-    }
-  }catch{}
-}
-async function openCapDetail(){
-  $("capMask").classList.add("show");
-  try{
-    const j=await(await fetch("/api/capabilities",{cache:"no-store"})).json();
-    const caps=(j.capabilities||[]);
-    $("capList").innerHTML=caps.map(c=>{
-      const ok=c.status==="running";
-      const err=c.status==="error";
-      const idle=c.status==="idle";
-      const col=ok?"var(--ok)":(err?"var(--bad)":"var(--text3)");
-      return `<div style="padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:13px;font-weight:500">${esc(capLabel(c.name))}</div><div style="font-size:10.5px;color:var(--text3)">${esc(c.error||(ok?"已启动":(idle?"未启动":"启动中")))}</div></div>
-        <span style="font-size:11px;color:${col};font-weight:600">${esc(c.status).toUpperCase()}</span>
-      </div>`}).join("")||'<div style="text-align:center;color:var(--text3);padding:20px">暂无能力</div>';
-  }catch(e){$("capList").textContent="加载失败"}
-}
-function closeCap(){$("capMask").classList.remove("show")}
-
-function renderTabs(){
-  const cats=[...new Set(tools.map(t=>t.group||"工具"))];
-  const caps=[...new Set(tools.flatMap(t=>t.capabilities||[]))];
-  $("tabs").querySelector(".tabs-inner").innerHTML=
-    `<button class="tab ${activeCat==="all"&&!activeCap?"on":""}" data-cat="all" data-cap="" onclick="setCat('all','')">全部</button>`+
-    caps.map(c=>`<button class="tab ${activeCap===c?"on":""}" data-cap="${esc(c)}" onclick="setCat('', this.dataset.cap)">${esc(capLabel(c))}</button>`).join("")+
-    cats.filter(c=>c!=="全部").map(c=>`<button class="tab ${activeCat===c?"on":""}" data-cat="${esc(c)}" onclick="setCat(this.dataset.cat,'')">${esc(c)}</button>`).join("")
-}
-function capLabel(c){return c==="browser"?"🌐 浏览器":c==="storage"?"💾 存储":c==="network"?"🌍 网络":c}
-
-function setCat(c,cap){activeCat=c;activeCap=cap;renderTabs();renderCards()}
-
-function renderCards(){
-  let filtered=tools;
-  if(activeCap)filtered=filtered.filter(t=>(t.capabilities||[]).includes(activeCap));
-  if(activeCat&&activeCat!=="all")filtered=filtered.filter(t=>(t.group||"工具")===activeCat);
-  if(!filtered.length){$("main").innerHTML='<div class="empty"><div class="empty-icon">&#x1F50D;</div><p>无匹配工具</p></div>';return}
-  window.__tools=filtered;
-  const groups={};
-  for(const t of filtered)(groups[t.group||"工具"]=groups[t.group||"工具"]||[]).push(t);
-  $("main").innerHTML=Object.entries(groups).map(([g,arr])=>
-    `<div class="sec"><div class="sec-title">${esc(g)} <span class="count">${arr.length}</span></div><div class="grid">${arr.map(cardHtml).join("")}</div></div>`).join("")
-}
-
-function cardHtml(t){
-  const st=t.status||{};
-  const dotCls=t.type==="link"?"warn":(st.status==="running"?"ok":(st.status==="error"?"bad":"warn"));
-  const stxt=t.type==="link"?"链接":(st.status==="running"?"运行":(st.status||"—"));
-  const caps=(t.capabilities||[]).map(c=>`<span class="cap-chip ${esc(c)}">${esc(capLabel(c))}</span>`).join("");
-  return`<div class="card" data-id="${esc(t.id)}">
-    <span class="card-tag ${t.type==="app"?"hosted":"link"}">${t.type==="app"?"托管":"链接"}</span>
-    <div class="card-icon">${esc(t.icon||"🧰")}</div>
-    <div class="card-name">${esc(t.name)}</div>
-    <div class="card-desc">${esc(t.desc||"")}</div>
-    ${caps?`<div class="caps">${caps}</div>`:""}
-    <div class="card-foot"><span class="card-dot ${dotCls}"></span>${stxt}</div>
-    <button class="del-btn" data-id="${esc(t.id)}" data-name="${esc(t.name)}" title="删除">&#x1F5D1;</button>
-  </div>`
-}
-
-document.addEventListener("click",e=>{
-  const del=e.target.closest(".del-btn");
-  if(del){e.stopPropagation();delTool(del.dataset.id,del.dataset.name);return}
-  const card=e.target.closest(".card");
-  if(!card)return;
-  const t=(window.__tools||[]).find(x=>x.id===card.dataset.id);
-  if(t)openDetail(t)
-});
-
-// Add tool
-let addType="app",advOpen=!1;
-function openAdd(){$("addMask").classList.add("show");updatePreview()}
-function closeAdd(){$("addMask").classList.remove("show")}
-function toggleAdv(){advOpen=!advOpen;$("fAdv").style.display=advOpen?"":"none";$("advBtn").textContent=(advOpen?"▾":"▸")+" 高级设置";updatePreview()}
-function setType(t){addType=t;$("ftApp").classList.toggle("on",t==="app");$("ftLink").classList.toggle("on",t==="link");$("ftGit").classList.toggle("on",t==="git");$("fAppRows").style.display=t==="app"?"":"none";$("fLinkRows").style.display=t==="link"?"":"none";$("fGitRows").style.display=t==="git"?"":"none";$("fAdvApp").style.display=t==="app"?"":"none";updatePreview()}
-function collectSpec(){
-  if(addType==="git")return {git:true,name:($("fName").value||"").trim(),url:($("fGitUrl").value||"").trim(),branch:($("fGitBranch").value||"").trim(),id:$("fId").value.trim()};
-  const s={name:($("fName").value||"").trim(),type:addType};
-  if(addType==="link")s.url=($("fUrl").value||"").trim();
-  const a={id:$("fId").value.trim(),desc:$("fDesc").value.trim(),group:$("fGroup").value.trim(),icon:$("fIcon").value.trim(),cmd:$("fCmd").value.trim(),port:$("fPort").value.trim(),health:$("fHealth").value.trim()};
-  if(a.id)s.id=a.id;if(a.desc)s.desc=a.desc;if(a.group&&a.group!=="工具")s.group=a.group;if(a.icon&&a.icon!=="🔧")s.icon=a.icon;
-  if(addType==="app"){if(a.cmd){try{const c=JSON.parse(a.cmd);if(Array.isArray(c))s.cmd=c}catch{}}if(a.port)s.port=parseInt(a.port,10);if(a.health)s.health=a.health}
-  return s
-}
-function updatePreview(){const s=collectSpec();$("fPreview").textContent=s.git?`Git 导入: ${s.url||"(未填)"}`:JSON.stringify(s,null,2)}
-["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth","fGitUrl","fGitBranch"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",updatePreview)});
-
-let selZip=null;
-function pickZip(){$("fZipInput").value="";$("fZipInput").click()}
-function handleDrop(files){if(files.length){selZip=files[0];$("fZipInfo").textContent=selZip.name+" ("+Math.round(selZip.size/1024)+" KB)"}}
-$("fZipInput").addEventListener("change",()=>{const f=$("fZipInput").files[0];if(f){selZip=f;$("fZipInfo").textContent=f.name+" ("+Math.round(f.size/1024)+" KB)"}})
-async function uploadZipTo(id,zip){const fd=new FormData();fd.append("path","tools/"+id+"/");fd.append("file",zip,zip.name);const j=await(await fetch("/api/files",{method:"POST",body:fd})).json();if(!j.ok)throw new Error(j.error);await fetch("/api/tools/"+id+"/restart",{method:"POST"})}
-async function saveAdd(){
-  const spec=collectSpec();
-  if(!spec.name){toast("请填写名称");return}
-  try{
-    let j;
-    if(spec.git){
-      if(!/^https?:\/\//.test(spec.url||"")){toast("Git 仓库需 http(s) 地址");return}
-      j=await(await fetch("/api/tools/import",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:spec.url,branch:spec.branch||undefined,id:spec.id||undefined})})).json();
-    }else{
-      if(spec.type==="link"&&!/^https?:\/\//.test(spec.url||"")){toast("link 型需 http(s) 地址");return}
-      j=await(await fetch("/api/tools",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(spec)})).json();
-    }
-    if(!j.ok)throw new Error(j.error);
-    const id=j.tool&&j.tool.id;
-    if(spec.type==="app"&&id&&selZip)await uploadZipTo(id,selZip);
-    closeAdd();["fName","fUrl","fId","fDesc","fGroup","fIcon","fCmd","fPort","fHealth","fGitUrl","fGitBranch"].forEach(x=>{const el=document.getElementById(x);if(el)el.value=""});
-    selZip=null;$("fZipInfo").textContent="未选择";
-    toast("已创建");load()
-  }catch(e){toast(e.message)}
-}
-
-// manifest 在线校验(不写盘):POST 内容 → 显示错误/归一化结果
-async function validateManifestUI(){
-  const v=($("fCmd").value||"").trim();
-  let spec=collectSpec();
-  if(spec.git){toast("Git 模式无需校验");return}
-  if(v&&!spec.cmd){try{spec.cmd=JSON.parse(v)}catch{toast("启动命令需 JSON 数组,如 [\"node\",\"server.mjs\"]");return}}
-  const show=document.getElementById("fValidateResult");
-  try{
-    const j=await(await fetch("/api/tools/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({manifest:spec})})).json();
-    if(show){
-      if(j.ok){
-        const n=j.normalized||{};
-        show.innerHTML=`<span style="color:var(--ok,#2ea043)">✓ 配置有效</span> · ${n.type}${n.port?" · :"+n.port:""}${n.capabilities&&n.capabilities.length?" · 能力: "+n.capabilities.join("/"):""}${n.runtime?" · "+n.runtime:""}`;
-        show.style.display="block";show.style.color="";
-      }else{
-        show.innerHTML=`<span style="color:#d1242f">✕ ${(j.errors||[]).join("; ")}</span>`;
-        show.style.display="block";
-      }
-    }else toast(j.ok?"✓ 配置有效":(j.errors||[]).join("; "));
-  }catch(e){toast("校验失败: "+e.message)}
-}
-
-let cfmResolve=null;
-// ---------- 工具详情 ----------
-let curDetail=null;
-function openDetail(t){
-  curDetail=t;
-  $("detIcon").textContent=t.icon||"🔧";
-  $("detName").textContent=t.name;
-  $("detId").textContent=t.id;
-  $("detType").textContent=t.type==="link"?"外部跳转":"托管进程";
-  $("detPort").textContent=t.type==="link"?(t.url||"—"):(t.port||"—");
-  const caps=(t.capabilities||[]).map(c=>`<span class="cap-chip ${esc(c)}">${esc(capLabel(c))}</span>`).join("");
-  $("detCaps").innerHTML=caps||'<span style="color:var(--text3)">—</span>';
-  const st=t.status||{};
-  const stxt=t.type==="link"?"链接":(st.status==="running"?"运行中":(st.status==="stopped"?"已停止":(st.status||"—")));
-  $("detStatus").textContent=stxt+" "+(st.health==="ok"?"· 健康":"");
-  $("detDot").className="card-dot "+(t.type==="link"?"warn":(st.status==="running"?"ok":(st.status==="error"?"bad":"warn")));
-  $("detErr").textContent=t.error||st.error||"—";
-  $("detOpen").textContent=t.type==="link"?"打开链接":"打开界面";
-  $("detRestart").style.display=t.type==="app"?"":"none";
-  $("detMask").classList.add("show");
-  loadLog();
-}
-function closeDet(){$("detMask").classList.remove("show");curDetail=null}
-function openToolDetail(){if(curDetail)window.open(curDetail.type==="link"?curDetail.url:"/tool/"+curDetail.id+"/","_blank")}
-async function loadLog(){
-  if(!curDetail)return;
-  const id=curDetail.id;
-  try{
-    const j=await(await fetch("/api/logs/"+id,{cache:"no-store"})).json();
-    const box=$("detLog");
-    if(j.ok&&j.lines&&j.lines.length)box.innerHTML=j.lines.map(l=>esc(l)).join("\n")||'<span class="log-empty">(空)</span>';
-    else box.innerHTML='<span class="log-empty">'+(j.error||"无日志")+"</span>";
-    box.scrollTop=box.scrollHeight;
-  }catch(e){$("detLog").innerHTML='<span class="log-empty">日志获取失败</span>'}
-}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-async function restartTool(){
-  if(!curDetail)return;
-  try{
-    const j=await(await fetch("/api/tools/"+curDetail.id+"/restart",{method:"POST"})).json();
-    if(!j.ok)throw new Error(j.error);
-    toast("已重启");setTimeout(()=>{loadLog();load()},1500)
-  }catch(e){toast(e.message)}
-}
-function cfmConfirm(msg){return new Promise(r=>{cfmResolve=r;$("cfmMsg").textContent=msg;$("cfmPass").value="";$("cfmMask").classList.add("show");setTimeout(()=>$("cfmPass").focus(),100)})}
-function closeCfm(ok){const pass=$("cfmPass").value;$("cfmMask").classList.remove("show");if(cfmResolve){cfmResolve(ok?pass:null);cfmResolve=null}}
-$("cfmOk").addEventListener("click",()=>closeCfm(!0));
-$("cfmPass").addEventListener("keydown",e=>{if(e.key==="Enter")closeCfm(!0)});
-async function delTool(id,name){const pass=await cfmConfirm("确认删除 "+name+" ?");if(!pass)return;try{const j=await(await fetch("/api/tools",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,pass})})).json();if(!j.ok)throw new Error(j.error);toast("已删除");load()}catch(e){toast(e.message)}}
-
-async function checkAdminPass(){try{const j=await(await fetch("/api/admin/pass")).json();if(!j.set){$("adminMask").classList.add("show");setTimeout(()=>$("adminPass1").focus(),200)}}catch{}}
-async function setAdminPass(){const p=$("adminPass1").value;if(!p||p.length<4){toast("密码至少 4 位");return}try{const j=await(await fetch("/api/admin/pass",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pass:p})})).json();if(!j.ok)throw new Error(j.error);$("adminMask").classList.remove("show");toast("已设置")}catch(e){toast(e.message)}}
-$("adminOk").addEventListener("click",setAdminPass);
-$("adminPass1").addEventListener("keydown",e=>{if(e.key==="Enter")setAdminPass()});
-checkAdminPass();
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeAdd();closeDet()}});
-load();
-</script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/app.js"></script>
 </body>
 </html>

@@ -16,6 +16,10 @@ services:
     environment:
       # 主程序端口（容器内 8080，镜像默认值，无需改）
       - PORT=8080
+      # 扫描/数据目录：显式写死，平台只扫描 TOOLS_DIR 这一个目录（单层，不递归）
+      # 必须与下方 volumes 挂载目标一致
+      - TOOLS_DIR=/app/tools
+      - DATA_DIR=/app/data
       # 管理员密码：首次访问网页时设置（存储为 sha256，不落明文）。
       # 不设环境变量也行——首次打开页面会弹窗引导设置。
       # - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
