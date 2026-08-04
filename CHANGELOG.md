@@ -2,6 +2,47 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.8.2 (2026-08-04) · 架构文档 + 加固
+
+- **docs/ARCHITECTURE.md**:基于当前实现的架构文档(主逻辑四条链路 + 支线辅助面 + 模块职责表 + 数据流 + API + 开发指南)
+- **README 重构**:更新到 v0.8 现状,文档索引补全(ARCHITECTURE/deploy-nas/sdk/template/PLAN-V2)
+- 加固:`manager.start()` cmd 防御(坏工具不中断 startAll)+ spawn 异常捕获
+- 加固:日志句柄释放(`detachLog`,删除工具时回收文件流与内存缓冲)
+
+## v0.8.1 (2026-08-04) · 遗留修复(WebSocket/测试/CI)
+
+- **WebSocket 反代**:`proxyUpgrade()` 支持 /tool/<id>/ 升级双向转发(工具可实时推送)
+- **单元测试**:tests/ 四组(node:test 零依赖)20 用例,`npm test` 运行
+- **CI lint**:push 自动语法检查(后端全模块 + 前端内联 JS)
+- MIME 扩展(图片/字体/文档/wasm 等 20+ 类型)
+- Git 导入传 exists 回调(防覆盖已托管工具)
+
+## v0.8.0 (2026-08-04) · 二轮审核安全修复
+
+- **前端 XSS 修复**:工具名/描述/图标/分组全量转义;delTool 改 data 属性事件委托
+- **zip 炸弹防护**:解压后校验体积增量(>500MB 中止)
+- browser daemon:连接重置清 sessions、/cmd 请求体上限 1MB
+
+## v0.7.0 (2026-08-04) · V2 内核重构(M0-M5 完成)
+
+### 架构
+- **三层结构**:`lib/core/`(内核 12 模块) + `lib/capabilities/`(能力层) + `server.mjs`(入口薄层)
+- **声明式接入**:manifest.json(V1 tool.json 自动映射),runtime/capabilities/entry 声明
+- **能力懒加载**:idle→starting→running→回收 状态机,600s 空闲回收
+
+### 能力模块
+- **browser**:浏览器桥平台化(CDP 代理,dev 真实 Edge / headless Chromium 双后端)
+- **storage**:数据目录(CAP_STORAGE_DIR)+ 平台级 WebDAV 备份/恢复
+
+### 功能
+- Git 仓库导入工具(浅克隆+自动识别 manifest)
+- manifest 在线校验 API
+- 门户 UI v2:能力徽标 / 详情弹层(日志/重启) / 能力筛选 Tab / 能力健康指示器
+- 模板项目 templates/tool-template + 工具 SDK lib/sdk.js
+
+### 重构清理
+- 解分层倒置(webdav 提升到内核层)、server.mjs 瘦身、能力名单单一来源、死代码清理
+
 ## v0.6.1 (2026-08-04) · 集成 wb-credits v1.3.3
 
 - 镜像构建时 clone 的 wb-credits 升级到 **v1.3.3**(确认弹窗修复/WebDAV 下载恢复/自动刷新免闪屏/计算收敛到后端)
