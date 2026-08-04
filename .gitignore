@@ -4,16 +4,7 @@ data/
 *.log.err
 
 # ===== 工具目录(挂载卷,工具代码在各仓库,不入库) =====
-tools/*
-# 例外:官方内置工具(积分仪表盘)入库,但排除其凭证/数据文件
-!tools/wb-credits/
-!tools/wb-credits/**
-tools/wb-credits/wb-accounts.json
-tools/wb-credits/wb-sync.json
-tools/wb-credits/wb-history.json
-tools/wb-credits/wb-last-data.json
-tools/wb-credits/*.log
-tools/wb-credits/*.log.err
+tools/
 
 # ===== 工具凭证/敏感(严禁上传) =====
 tools/*/wb-accounts.json
@@ -29,5 +20,3 @@ node_modules/
 docker-compose.local.yml
 deploy-local.sh
 .local/
-# 本地 Docker 测试目录(含运行数据/凭证,不入库)
-deploy/

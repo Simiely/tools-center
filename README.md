@@ -47,11 +47,11 @@ docker compose up -d           # http://localhost:2626
 
 ## 接入的工具
 
-> **工具接入方式**:平台扫描 `tools/` 目录下的 `tool.json` 自动发现;代码可内置进仓库(平台全权管理)或独立仓库挂载(独立 git 维护)。
+> **独立性原则**:各工具保持独立仓库、独立部署,tools-center 只做统一入口(挂载代码 / link 跳转)。
 
 | 工具 | 接入方式 | 说明 |
 |---|---|---|
-| 积分仪表盘 | app(内置) | wb-credits 代码内置 `tools/wb-credits/`,平台托管进程 |
+| 积分仪表盘 | app | [workbuddy-credits-tool](https://github.com/Simiely/workbuddy-credits-tool) 独立仓库挂载,平台托管进程 |
 | 微信读书购书工作台 | app | weread-budget 服务化(本地开发中) |
 | NAS 现有服务(Jellyfin 等) | link | 一张卡片接入 |
 

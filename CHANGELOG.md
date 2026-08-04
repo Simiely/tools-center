@@ -2,12 +2,6 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
-## v0.9.1 (2026-08-04) · 积分工具内置 + 挂载型删除修复
-
-- **积分仪表盘内置**:wb-credits 代码复制进 `tools/` 目录(平台全权管理),compose 移除独立仓库挂载;`.gitignore` 白名单例外(代码入库、凭证文件仍排除)
-- **挂载型工具删除修复**:挂载点目录删除 EBUSY → 改为"解除托管 + 忽略标记(`data/removed-tools.json`)",重扫跳过,新增 `POST /api/tools/restore` 恢复
-- **反代头修复**:HTML 注入 `__BASE__` 后移除上游 `transfer-encoding`(修复 chunked+content-length 非法组合)
-
 ## v0.9.0 (2026-08-04) · 安全边界 + 结构重构
 
 - **目录环境变量化**:`TOOLS_DIR`/`DATA_DIR` 覆盖默认目录(部署时显式写死扫描范围),compose 三件套同步更新
