@@ -18,7 +18,8 @@ VOLUME ["/app/tools", "/app/data"]
 
 EXPOSE 8080
 
-# 以非 root 运行(配合宿主 PUID/PGID 挂载卷,避免权限错)
+# 默认以非 root 运行(更安全);宿主挂载卷需要写权限时,
+# 在 compose/run 里用 user: root 覆盖(家庭内网部署的常见做法,见 docker-compose.yml)
 USER node
 
 CMD ["node", "server.mjs"]

@@ -7,7 +7,7 @@ import { CONFIG, DIRS } from "./lib/core/config.js";
 import { scanTools, listTools, getTool, createTool, removeTool, validateManifest } from "./lib/core/registry.js";
 import { importFromGit } from "./lib/core/git.js";
 import * as manager from "./lib/core/manager.js";
-import { proxyRequest } from "./lib/core/proxy.js";
+import { proxyRequest, proxyUpgrade } from "./lib/core/proxy.js";
 import { readLog } from "./lib/core/logger.js";
 import { capabilitiesStatus, ensureCapability } from "./lib/core/capability.js";
 import { initCapabilities } from "./lib/capabilities/index.js";
@@ -21,7 +21,15 @@ scanTools();
 manager.startAll();
 manager.startHealthLoop();
 
-const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8" };
+const MIME = {
+  ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8", ".map": "application/json; charset=utf-8",
+  ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp", ".ico": "image/x-icon",
+  ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf",
+  ".txt": "text/plain; charset=utf-8", ".md": "text/markdown; charset=utf-8",
+  ".wasm": "application/wasm", ".pdf": "application/pdf", ".zip": "application/zip",
+};
 
 /** 对外工具视图:隐藏内部字段,附运行状态 */
 function publicTool(t) {
@@ -103,7 +111,11 @@ const server = http.createServer(async (req, res) => {
       try { b = await jsonBody(req); } catch { return json(400, { ok: false, error: "JSON 解析失败" }); }
       if (!b.url) return json(400, { ok: false, error: "缺少 url" });
       try {
-        const { id } = await importFromGit(String(b.url), String(b.id || ""), { branch: b.branch ? String(b.branch) : undefined });
+        // exists 回调:导入期间用当前注册表检查目标 id 是否已存在(防覆盖已托管工具)
+        const { id } = await importFromGit(String(b.url), String(b.id || ""), {
+          branch: b.branch ? String(b.branch) : undefined,
+          exists: (tid) => !!getTool(tid),
+        });
         manager.sync();
         const t = getTool(id);
         return json(201, { ok: true, tool: publicTool(t) });
@@ -272,6 +284,17 @@ const server = http.createServer(async (req, res) => {
   } catch (e) {
     json(500, { ok: false, error: e.message });
   }
+});
+
+// WebSocket 升级:转发 /tool/<id>/ 到工具进程(工具需要实时推送/WS 时)
+server.on("upgrade", (req, socket, head) => {
+  const url = new URL(req.url, "http://127.0.0.1");
+  try {
+    if (!proxyUpgrade(req, socket, head, url)) {
+      socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+      socket.destroy();
+    }
+  } catch { try { socket.destroy(); } catch {} }
 });
 
 server.listen(parseInt(process.argv[2], 10) || CONFIG.PORT, "0.0.0.0", () => {
