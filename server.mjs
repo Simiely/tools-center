@@ -12,6 +12,8 @@ import { proxyRequest } from "./lib/core/proxy.js";
 import { readLog } from "./lib/core/logger.js";
 import { capabilitiesStatus, ensureCapability } from "./lib/core/capability.js";
 import { initCapabilities } from "./lib/capabilities/index.js";
+import * as backup from "./lib/core/backup.js";
+import { loadSyncConfig, saveSyncConfig, testConnection } from "./lib/capabilities/storage/webdav.js";
 
 const ADMIN_PASS_FILE = path.join(DIRS.data, "admin-pass.json");
 // 密码以 sha256 摘要存储(不落明文);loadAdminPass 返回摘要,校验时对输入同样摘要后比对
@@ -137,6 +139,62 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         return json(400, { ok: false, error: e.message });
       }
+    }
+    // ---- 备份/恢复(存储能力,M2) ----
+    if (url.pathname === "/api/backup" && req.method === "POST") {
+      try { return json(200, { ok: true, ...backup.localBackup() }); }
+      catch (e) { return json(500, { ok: false, error: e.message }); }
+    }
+    if (url.pathname === "/api/backup" && req.method === "GET") {
+      return json(200, { ok: true, backups: backup.listBackups() });
+    }
+    if (url.pathname === "/api/restore" && req.method === "POST") {
+      try {
+        const b = JSON.parse((await body()) || "{}");
+        if (!b.backup) return json(400, { ok: false, error: "缺少 backup(备份目录名)" });
+        return json(200, { ok: true, ...backup.localRestore(b.backup) });
+      } catch (e) { return json(500, { ok: false, error: e.message }); }
+    }
+    // ---- WebDAV(存储能力,M2) ----
+    if (url.pathname === "/api/webdav" && req.method === "GET") {
+      const cfg = loadSyncConfig();
+      return json(200, { ok: true, configured: !!cfg, url: cfg ? cfg.url : "" });
+    }
+    if (url.pathname === "/api/webdav" && req.method === "POST") {
+      const b = JSON.parse((await body()) || "{}");
+      if (!b.url || !b.user || !b.pass) return json(400, { ok: false, error: "需要 url/user/pass" });
+      saveSyncConfig({ url: String(b.url), user: String(b.user), pass: String(b.pass) });
+      return json(200, { ok: true });
+    }
+    if (url.pathname === "/api/webdav/test" && req.method === "POST") {
+      try {
+        const cfg = loadSyncConfig();
+        if (!cfg) return json(400, { ok: false, error: "未配置 WebDAV" });
+        await testConnection(cfg.url, cfg.user, cfg.pass);
+        return json(200, { ok: true });
+      } catch (e) { return json(500, { ok: false, error: e.message }); }
+    }
+    if (url.pathname === "/api/webdav/upload" && req.method === "POST") {
+      try {
+        const b = JSON.parse((await body()) || "{}");
+        const cfg = loadSyncConfig();
+        if (!cfg) return json(400, { ok: false, error: "未配置 WebDAV" });
+        // 上传最近一次本地备份(或新做一次)
+        const bl = backup.listBackups();
+        const ts = b.backup && bl.includes(b.backup) ? b.backup : (bl.length ? bl[bl.length - 1] : null);
+        if (!ts) { const nb = backup.localBackup(); return json(200, { ok: true, ...(await backup.webdavUpload(cfg, nb.dir)) }); }
+        return json(200, { ok: true, ...(await backup.webdavUpload(cfg, path.join(backup.BACKUPS_ROOT, ts))) });
+      } catch (e) { return json(500, { ok: false, error: e.message }); }
+    }
+    if (url.pathname === "/api/webdav/download" && req.method === "POST") {
+      try {
+        const b = JSON.parse((await body()) || "{}");
+        const cfg = loadSyncConfig();
+        if (!cfg) return json(400, { ok: false, error: "未配置 WebDAV" });
+        if (!b.ts) return json(400, { ok: false, error: "缺少 ts(云端备份时间戳)" });
+        const dl = await backup.webdavDownload(cfg, String(b.ts));
+        return json(200, { ok: true, ...dl });
+      } catch (e) { return json(500, { ok: false, error: e.message }); }
     }
     // 管理员密码:状态查询 + 首次设置
     if (url.pathname === "/api/admin/pass") {
