@@ -115,8 +115,9 @@ async function delTool(id, name) {
   const pass = await cfmConfirm("确认删除 " + name + " ?");
   if (!pass) return;
   try {
-    await apiDeleteTool(id, pass);
-    toast("已删除"); load();
+    const j = await apiDeleteTool(id, pass);
+    toast(j.dirKept ? "已解除托管(挂载目录保留)" : "已删除");
+    load();
   } catch (e) { toast(e.message); }
 }
 

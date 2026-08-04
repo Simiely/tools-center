@@ -4,7 +4,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { CONFIG, DIRS } from "./lib/core/config.js";
-import { scanTools, listTools, getTool, createTool, removeTool, validateManifest } from "./lib/core/registry.js";
+import { scanTools, listTools, getTool, createTool, removeTool, restoreTool, validateManifest } from "./lib/core/registry.js";
 import { importFromGit } from "./lib/core/git.js";
 import * as manager from "./lib/core/manager.js";
 import { proxyRequest, proxyUpgrade } from "./lib/core/proxy.js";
@@ -104,9 +104,9 @@ const routes = [
       try {
         const t = getTool(id);
         if (t && t.type === "app") await manager.stop(t);  // 先停子进程(否则 Windows 下目录被占用)
-        removeTool(id);
+        const r = removeTool(id);
         manager.sync();
-        return sendJson(res, 200, { ok: true, removed: id });
+        return sendJson(res, 200, { ok: true, removed: id, dirKept: r.dirKept });
       } catch (e) { return sendJson(res, 400, { ok: false, error: e.message }); }
     },
   },
@@ -140,6 +140,19 @@ const routes = [
   {
     m: "POST", p: "/api/reload",
     handler: (req, res) => { scanTools(); manager.sync(); return sendJson(res, 200, { ok: true, total: listTools().length }); },
+  },
+  // 恢复已解除托管的工具(清掉忽略标记,挂载型工具重新识别)
+  {
+    m: "POST", p: "/api/tools/restore",
+    handler: async (req, res) => {
+      try {
+        const { id } = await jsonBody(req);
+        if (!id) return sendJson(res, 400, { ok: false, error: "缺少 id" });
+        restoreTool(String(id));
+        manager.sync();
+        return sendJson(res, 200, { ok: true, restored: String(id) });
+      } catch (e) { return sendJson(res, 400, { ok: false, error: e.message }); }
+    },
   },
   // ---- API:能力 ----
   {
