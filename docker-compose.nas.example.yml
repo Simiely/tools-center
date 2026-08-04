@@ -56,9 +56,10 @@ services:
       # 用途: 管理员密码 hash / 日志 / 备份
       - /path/to/xxxx:/app/data
 
-      # (可选) 独立工具仓库直接挂载 —— 推荐方式, 工具保持独立 git 维护
+      # (可选) 独立工具仓库直接挂载 —— 若工具代码不在 tools/ 内,可用此方式独立 git 维护
       # /path/to/xxxx = 工具仓库在 NAS 上的路径 (示例: /mnt/usb2/Configs/workbuddy-credits-tool)
       # 先在 NAS 上: git clone https://github.com/Simiely/workbuddy-credits-tool.git /path/to/xxxx
+      # 注意: 挂载型工具删除时平台只解除托管(目录保留),不会物理删除
       # - /path/to/xxxx:/app/tools/wb-credits
 
     restart: unless-stopped
