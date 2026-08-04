@@ -26,6 +26,11 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .hdr-acts{display:flex;align-items:center;gap:8px}
 .hdr-stat{font-size:11px;color:var(--text2);border-right:1px solid var(--line);padding-right:8px;display:none}
 @media(min-width:600px){.hdr-stat{display:block}}
+.cap-pill{font-size:11px;padding:4px 8px;border-radius:12px;border:1px solid var(--line);color:var(--text2);cursor:pointer;background:var(--surface);transition:.15s}
+.cap-pill:hover{border-color:var(--line2);background:var(--card)}
+.cap-pill.all-ok{color:var(--ok);border-color:var(--ok)33;background:var(--ok)10}
+.cap-pill.has-err{color:var(--bad);border-color:var(--bad)55;background:var(--bad)10;animation:cap-warn 2s ease-in-out infinite}
+@keyframes cap-warn{0%,100%{opacity:.7}50%{opacity:1}}
 
 .tabs{position:sticky;top:56px;z-index:40;background:var(--bg);border-bottom:1px solid var(--line)}
 .tabs-inner{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -137,6 +142,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="hdr-acts">
       <span class="hdr-stat" id="stat">—</span>
       <button class="sm btn" onclick="load()">刷新</button>
+      <span class="cap-pill" id="capStatus" onclick="openCapDetail()" title="点击查看能力状态"></span>
       <button class="sm btn primary" onclick="openAdd()">+ 添加</button>
     </div>
   </div>
@@ -227,6 +233,16 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     </div>
   </div>
 </div>
+
+<!-- 能力状态弹层 -->
+<div class="mask" id="capMask">
+  <div class="modal" style="max-width:420px">
+    <h2>能力状态</h2>
+    <div class="tip">能力模块按需启动(工具首次调用才加载),空闲 600s 自动回收。</div>
+    <div id="capList"></div>
+    <div class="acts"><button class="btn danger" onclick="closeCap()">关闭</button></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <div class="mask" id="cfmMask">
@@ -266,8 +282,46 @@ async function load(){
     const running=tools.filter(t=>t.status&&t.status.status==="running").length;
     $("stat").textContent=running+"/"+tools.length+" 运行";
     $("meta").textContent=" · "+tools.length+" 工具";
+    loadCaps();  // 并行加载能力状态(更新顶栏指示器)
   }catch(e){$("main").innerHTML=`<div class="empty"><div class="empty-icon">!</div><p>${e.message}</p></div>`}
 }
+
+async function loadCaps(){
+  try{
+    const j=await(await fetch("/api/capabilities",{cache:"no-store"})).json();
+    if(!j.ok)return;
+    const caps=j.capabilities||[];
+    const pill=$("capStatus");
+    const errors=caps.filter(c=>c.status==="error");
+    const running=caps.filter(c=>c.status==="running").length;
+    if(errors.length){
+      pill.textContent="⚠ "+errors.length+" 能力异常";
+      pill.className="cap-pill has-err";
+      pill.dataset.err=errors.map(c=>c.name+": "+(c.error||"未知")).join("\n");
+    }else{
+      const total=caps.length;
+      pill.textContent="✓ "+(total?running+"/"+total+" 能力":"无能力");
+      pill.className="cap-pill "+(running?"all-ok":"");
+    }
+  }catch{}
+}
+async function openCapDetail(){
+  $("capMask").classList.add("show");
+  try{
+    const j=await(await fetch("/api/capabilities",{cache:"no-store"})).json();
+    const caps=(j.capabilities||[]);
+    $("capList").innerHTML=caps.map(c=>{
+      const ok=c.status==="running";
+      const err=c.status==="error";
+      const idle=c.status==="idle";
+      const col=ok?"var(--ok)":(err?"var(--bad)":"var(--text3)");
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:500">${capLabel(c.name)}</div><div style="font-size:10.5px;color:var(--text3)">${c.error||(ok?"已启动":(idle?"未启动":"启动中"))}</div></div>
+        <span style="font-size:11px;color:${col};font-weight:600">${c.status.toUpperCase()}</span>
+      </div>`}).join("")||'<div style="text-align:center;color:var(--text3);padding:20px">暂无能力</div>';
+  }catch(e){$("capList").textContent="加载失败"}
+}
+function closeCap(){$("capMask").classList.remove("show")}
 
 function renderTabs(){
   const cats=[...new Set(tools.map(t=>t.group||"工具"))];
