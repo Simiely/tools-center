@@ -12,7 +12,17 @@
 
 ## 1. Docker Compose（推荐：群晖/iStoreOS/OpenWrt/Windows）
 
-仓库自带 `docker-compose.yml`，可直接 `docker compose up -d`。
+**两种方式**：
+- **方式 A · 本地构建（推荐，不依赖 GitHub 镜像）**：用仓库代码 `docker compose -f docker-compose.local.yml up -d --build` 一条命令完成构建+启动
+- **方式 B · 拉取预构建镜像**：`docker compose up -d`（从 `ghcr.io/simiely/tools-center:main` 拉取，由 GitHub CI 自动构建）
+
+> 方式 A 完全自足：本机/内网构建，不依赖外网拉镜像（构建时基础镜像 `node:22-slim` 需能访问 Docker Hub，可配镜像加速器）。本地一键脚本（Windows/NAS 通用）：
+> ```bash
+> bash deploy-local.sh up      # 构建并启动（http://localhost:2626）
+> bash deploy-local.sh logs    # 查看日志
+> bash deploy-local.sh update  # 拉代码+重建
+> ```
+> `deploy-local.sh` 为本地脚本（含本机路径），不在仓库内；通用方式见下方 compose 配置示例。
 
 ### 群晖 DSM（Container Manager）
 
