@@ -18,7 +18,7 @@ jobs:
       - name: Node syntax check (all modules + frontend JS)
         run: |
           set -e
-          for f in server.mjs lib/core/*.js lib/capabilities/*.js lib/capabilities/*/*.mjs lib/capabilities/*/*.js lib/sdk.js public/js/*.js; do
+          for f in server.mjs lib/core/*.js lib/capabilities/*.js lib/capabilities/*/*.mjs lib/capabilities/*/*.js lib/routes/*.js lib/sdk.js public/js/*.js; do
             node --check "$f"
           done
           echo "✅ 语法检查全部通过"

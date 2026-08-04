@@ -2,6 +2,16 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.10.1 (2026-08-04) · 路由按域拆分(前瞻性模块化)
+
+- **server.mjs 瘦身**:456 行 → 48 行(启动序列 + createServer + upgrade + listen)
+- **lib/routes/ 按域拆分**:
+  - `helpers.js`:sendJson/jsonBody/publicTool/refreshTools/serveIndex 共享工具
+  - `tools.js`(工具/反代/日志/上传) + `backup.js`(备份恢复) + `webdav.js` + `admin.js`(密码) + `cap.js`(能力+静态)
+  - `index.js`:合并各域路由 + matchRoute;顺序敏感段处理(backup 的 /api/tools/backup* 先于 tools 通配前缀)
+- **死代码清理**:移除从未引用的 MIME 表
+- 验证:29 测试全过 + 全域 API 冒烟(6 域全 OK)+ 真实容器 e2e(反代/备份/前端正常)
+
 ## v0.10.0 (2026-08-04) · 工具级备份/恢复
 
 - **lib/core/zip.js**:零依赖 zip 打包/解包(Node 内置 zlib.crc32+deflateRaw),多目录合并打包、CRC 校验、防 zip-slip 路径穿越
