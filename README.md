@@ -39,6 +39,7 @@ docker compose up -d           # http://localhost:2626
 | [`docs/deploy-nas.md`](docs/deploy-nas.md) | 部署者 | **部署指南**(群晖/iStoreOS/Windows/Docker) + 故障排查 |
 | [`docker-compose.nas.example.yml`](docker-compose.nas.example.yml) | 部署者 | **NAS 完整部署配置模板**(隐私路径 `/path/to/xxxx` 占位,复制替换即用) |
 | [`docs/sdk.md`](docs/sdk.md) | 工具作者 | **工具 SDK**(capBrowser/capStorageDir/懒加载机制) |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | 所有人 | **未来规划**:AI 能力接入(DeepSeek)、工具隔离、测试补强等已确认方向 |
 | [`templates/tool-template/`](templates/tool-template/) | 工具作者 | **最小可运行模板**(manifest + server.mjs + README) |
 | [`AGENTS.md`](AGENTS.md) | AI / 未来的你 | 技术栈、关键坑、约定、常用命令 |
 | [`DEVELOPMENT.md`](DEVELOPMENT.md) | 开发者 | 项目概览、历史架构说明 |

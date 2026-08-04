@@ -148,10 +148,13 @@ HTML 响应注入 __BASE__ = /tool/<id>(子路径挂载)
 
 | 文件 | 职责 |
 |---|---|
+| `lib/routes/` | 路由注册表(按域拆分,v0.10.1):`index.js`(合并+matchRoute) + `helpers.js`(共享工具) + `tools.js`/`backup.js`/`webdav.js`/`admin.js`/`cap.js`(五域) |
 | `lib/sdk.js` | 工具侧 SDK（capBrowser/capStorageDir，懒加载封装） |
-| `public/index.html` | 门户 UI（单文件，零框架，含全部 CSS/JS） |
-| `server.mjs` | 入口薄层：路由分发 + 启动序列 |
+| `public/` | 门户 UI(零框架):`index.html` + `js/{api,ui,app}.js`(拆分,v0.9) |
+| `server.mjs` | 入口薄层(43 行):启动序列 + createServer + upgrade + listen |
 | `templates/tool-template/` | 最小可运行工具模板 |
+
+> 路由扩展约定(v0.10.1):新增 API 按域加 `lib/routes/<域>.js` 导出路由数组,`index.js` 一行 `...<域>Routes` 接入,不碰其他文件。
 
 ---
 
@@ -231,14 +234,14 @@ data/webdav.json       ← WebDAV 配置
 
 ### 新增 API（平台作者）
 
-在 `server.mjs` 路由区添加一个 `if (url.pathname === ...)` 分支，业务逻辑尽量下沉到 `lib/core/` 模块。
+在 `lib/routes/` 按域加路由(见上「路由扩展约定」):新建 `<域>.js` 导出路由数组 → `index.js` 合并 → 业务逻辑下沉到 `lib/core/` 模块。
 
 ---
 
 ## 8. 测试与质量
 
 ```bash
-npm test          # 单元测试(node --test,20 用例)
+npm test          # 单元测试(node --test,29 用例)
 npm run check     # 全模块语法检查
 ```
 
