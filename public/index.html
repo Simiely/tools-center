@@ -40,6 +40,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .tab.on{color:var(--brand);border-bottom-color:var(--brand)}
 
 .main{max-width:1200px;margin:0 auto;padding:16px 8px 60px}
+.foot{position:fixed;left:0;right:0;bottom:6px;text-align:center;font-size:10.5px;color:var(--text3);opacity:.55;pointer-events:none;user-select:none;z-index:50}
 @media(min-width:500px){.main{padding:20px}}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 @media(min-width:500px){.grid{gap:10px}}
@@ -171,6 +172,8 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
   <div class="empty"><div class="empty-icon">—</div><p>加载中</p></div>
 </main>
 
+<footer class="foot" id="foot">Tools Center <span id="footVer">…</span></footer>
+
 <div class="mask" id="addMask">
   <div class="modal">
     <h2>添加工具</h2>
@@ -275,24 +278,16 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
   </div>
 </div>
 
-<div class="mask" id="adminMask">
-  <div class="modal" style="max-width:340px">
-    <h2>设置管理员密码</h2>
-    <div class="tip">用于删除工具等敏感操作。密码可选:留空 = 无密码状态(任何输入都通过);想用密码就填一个。</div>
-    <input class="finput" id="adminPass1" type="password" placeholder="密码(留空 = 无密码)">
-    <div class="acts"><button class="btn primary" id="adminOk">确认</button></div>
-  </div>
-</div>
-
 <div class="mask" id="passMask">
   <div class="modal" style="max-width:340px">
-    <h2>修改管理员密码</h2>
-    <div class="tip">留空新密码 = 清除密码(回到无密码状态)。已有密码时需先输入旧密码。</div>
-    <input class="finput" id="oldPass" type="password" placeholder="旧密码(已设置时必填)">
-    <input class="finput" id="newPass1" type="password" placeholder="新密码(留空 = 无密码)" style="margin-top:8px">
+    <h2 id="passTitle">设置管理员密码</h2>
+    <div class="tip" id="passTip">密码用于删除工具等敏感操作。留空新密码 = 无密码状态。</div>
+    <input class="finput" id="oldPass" type="password" placeholder="旧密码" style="display:none">
+    <input class="finput" id="newPass1" type="password" placeholder="新密码(留空 = 无密码)">
+    <input class="finput" id="newPass2" type="password" placeholder="再次输入新密码" style="margin-top:8px">
     <div class="acts">
       <button class="btn" onclick="closePass()">取消</button>
-      <button class="btn primary" id="passOk">确认修改</button>
+      <button class="btn primary" id="passOk">确认</button>
     </div>
   </div>
 </div>

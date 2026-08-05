@@ -14,7 +14,16 @@ async function load() {
     $("stat").textContent = running + "/" + tools.length + " 运行";
     $("meta").textContent = " · " + tools.length + " 工具";
     loadCaps();  // 并行加载能力状态(更新顶栏指示器)
+    loadVersion(); // 底部版本号(确认更新是否生效)
   } catch (e) { $("main").innerHTML = `<div class="empty"><div class="empty-icon">!</div><p>${e.message}</p></div>`; }
+}
+
+/** 底部版本号:读 /api/version(镜像内 package.json),显示 "Tools Center v0.11.x" */
+async function loadVersion() {
+  try {
+    const j = await (await fetch("/api/version", { cache: "no-store" })).json();
+    $("footVer").textContent = "v" + (j.version || "?");
+  } catch { $("footVer").textContent = "v?"; }
 }
 
 // 卡片点击/删除事件委托
@@ -193,31 +202,32 @@ async function delTool(id, name) {
   }
 }
 
-/* ---------- 管理员密码(可选:初次不强制,想用才设置;空 = 无密码) ---------- */
-// 初次登录不再强制设置密码:去掉自动弹窗,用户想设置时点顶栏「密码」即可
-async function setAdminPass() {
-  const p = $("adminPass1").value;
-  try {
-    const j = await apiPass.set(p);
-    if (!j.ok) throw new Error(j.error);
-    $("adminMask").classList.remove("show"); toast(p ? "已设置密码" : "已清除密码(无密码状态)");
-  } catch (e) { toast(e.message); }
+/* ---------- 管理员密码(可选:无密码时设置,有密码时修改/清除) ---------- */
+// 打开弹窗时探测密码状态,切换「设置(无密码)」/「修改(有密码)」两种模式
+async function openPass() {
+  $("oldPass").value = ""; $("newPass1").value = ""; $("newPass2").value = "";
+  let set = false;
+  try { const s = await apiPass.status(); set = !!(s && s.set); } catch {}
+  $("passTitle").textContent = set ? "修改管理员密码" : "设置管理员密码";
+  $("passTip").textContent = set
+    ? "留空新密码 = 清除密码(回到无密码状态)。"
+    : "密码用于删除工具等敏感操作。留空新密码 = 无密码状态。";
+  $("oldPass").style.display = set ? "" : "none";   // 已有密码才需要旧密码
+  $("passMask").classList.add("show");
+  setTimeout(() => (set ? $("oldPass") : $("newPass1")).focus(), 100);
 }
-$("adminOk").addEventListener("click", setAdminPass);
-$("adminPass1").addEventListener("keydown", e => { if (e.key === "Enter") setAdminPass(); });
-
-async function openPass() { $("oldPass").value = ""; $("newPass1").value = ""; $("passMask").classList.add("show"); setTimeout(() => $("oldPass").focus(), 100); }
 function closePass() { $("passMask").classList.remove("show"); }
 async function changePass() {
-  const oldP = $("oldPass").value, newP = $("newPass1").value;
+  const oldP = $("oldPass").value, newP = $("newPass1").value, newP2 = $("newPass2").value;
+  if (newP !== newP2) { toast("两次输入的新密码不一致"); return; }
   try {
     const j = await apiPass.change(oldP, newP);
     if (!j.ok) throw new Error(j.error);
-    closePass(); toast(newP ? "密码已修改" : "已清除密码(无密码状态)");
+    closePass(); toast(newP ? "密码已设置/修改" : "已清除密码(无密码状态)");
   } catch (e) { toast(e.message); }
 }
 $("passOk").addEventListener("click", changePass);
-$("newPass1").addEventListener("keydown", e => { if (e.key === "Enter") changePass(); });
+$("newPass2").addEventListener("keydown", e => { if (e.key === "Enter") changePass(); });
 
 /* ---------- 工具备份/恢复 ---------- */
 let tbBackups = [];       // 当前备份列表
