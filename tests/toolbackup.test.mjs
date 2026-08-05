@@ -84,3 +84,21 @@ test("restoreFromZip:非法备份名/未指定工具报错", () => {
   const list = tb.listToolBackups();
   assert.throws(() => tb.restoreFromZip(list[0].file, []), /未指定/);
 });
+
+test("deleteToolBackup:删除指定备份 zip(幂等)", () => {
+  const list = tb.listToolBackups();
+  assert.ok(list.length > 0, "应有备份");
+  const file = list[0].file;
+  const r1 = tb.deleteToolBackup(file);
+  assert.strictEqual(r1.deleted, true, "第一次应删除成功");
+  const r2 = tb.deleteToolBackup(file);
+  assert.strictEqual(r2.deleted, false, "已删过的应幂等返回 deleted:false");
+  // 列表里不再有它
+  assert.ok(!tb.listToolBackups().some((b) => b.file === file), "备份应从列表消失");
+});
+
+test("deleteToolBackup:非法文件名(路径穿越/非 tools- 前缀)拒绝", () => {
+  assert.throws(() => tb.deleteToolBackup("../evil.zip"), /非法备份文件名/);
+  assert.throws(() => tb.deleteToolBackup("foo.zip"), /非法备份文件名/);
+  assert.throws(() => tb.deleteToolBackup(""), /非法备份文件名/);
+});

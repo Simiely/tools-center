@@ -106,4 +106,9 @@ const apiToolBackup = {
     return j;
   },
   downloadUrl: (file) => "/api/tools/backup/download?file=" + encodeURIComponent(file),
+  del: async (file) => {
+    const j = await fetch("/api/tools/backup", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file }) }).then(r => r.json());
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
 };

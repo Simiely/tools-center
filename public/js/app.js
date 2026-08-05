@@ -152,26 +152,38 @@ async function validateManifestUI() {
 
 /* ---------- 删除工具(确认弹层) ---------- */
 let cfmResolve = null;
-function cfmConfirm(msg) { return new Promise(r => { cfmResolve = r; $("cfmMsg").textContent = msg; $("cfmPass").value = ""; $("cfmMask").classList.add("show"); setTimeout(() => $("cfmPass").focus(), 100); }); }
+// needPass=true 时显示密码框;无密码状态下不显示,直接确认即删
+function cfmConfirm(msg, needPass) {
+  return new Promise(r => {
+    cfmResolve = r;
+    $("cfmMsg").textContent = msg;
+    $("cfmPass").style.display = needPass ? "" : "none";
+    $("cfmPass").value = "";
+    $("cfmMask").classList.add("show");
+    if (needPass) setTimeout(() => $("cfmPass").focus(), 100);
+  });
+}
 function closeCfm(ok) { const pass = $("cfmPass").value; $("cfmMask").classList.remove("show"); if (cfmResolve) { cfmResolve(ok ? pass : null); cfmResolve = null; } }
 $("cfmOk").addEventListener("click", () => closeCfm(!0));
 $("cfmPass").addEventListener("keydown", e => { if (e.key === "Enter") closeCfm(!0); });
 async function delTool(id, name) {
-  // 删除前探测:工具是否仍存在于注册表(幽灵卡片 = 前端有卡片但后端查无此人)
-  let ghost = false;
+  // 删除前探测:① 工具是否仍存在于注册表(幽灵卡片 = 前端有卡片但后端查无此人) ② 是否设置过密码
+  let ghost = false, needPass = false;
   try {
-    const probe = await getJSON("/api/tools/" + id);
+    const [probe, pst] = await Promise.all([getJSON("/api/tools/" + id), apiPass.status().catch(() => null)]);
     ghost = !(probe && probe.ok && probe.tool);
+    needPass = !!(pst && pst.set);
   } catch { ghost = true; }
   // 幽灵卡片在确认弹窗(输密码处)就明示,避免用户误以为在删正常工具
   const pass = await cfmConfirm(
     ghost
       ? "⚠️ 该工具已不存在(残留卡片),删除仅清理前端记录,不影响数据。\n确认删除 " + name + " ?"
-      : "确认删除 " + name + " ?"
+      : "确认删除 " + name + " ?",
+    needPass
   );
-  if (!pass) return;
+  if (pass === null) return;   // 用户取消
   try {
-    const j = await apiDeleteTool(id, pass);
+    const j = await apiDeleteTool(id, pass || "");
     toast(j.dirKept ? "已解除托管(挂载目录保留)" : "已删除");
   } catch (e) {
     // 兜底:删除失败(如工具已不在注册表)也刷新列表,幽灵卡片随之消失
@@ -245,11 +257,22 @@ function renderTbList() {
         <span style="display:flex;gap:8px;align-items:center">
           <span style="font-size:11px;color:var(--text3)">${sizeKB} KB · ${(bk.tools || []).length} 工具</span>
           <a href="${apiToolBackup.downloadUrl(bk.file)}" download style="font-size:11px;color:var(--brand);text-decoration:none">下载</a>
+          <button class="btn sm danger" onclick="tbDel('${esc(bk.file)}')" title="删除此备份">删除</button>
         </span>
       </div>
       <div style="font-size:12px">${toolList}</div>
     </div>`;
   }).join("");
+}
+
+/** 删除一个备份(物理删除 zip,不可恢复) */
+async function tbDel(file) {
+  if (!confirm("确认删除备份 " + file + " ?\n此操作不可恢复!")) return;
+  try {
+    const j = await apiToolBackup.del(file);
+    toast(j.deleted ? "已删除备份" : "备份不存在(已清理)");
+    await tbRefresh();
+  } catch (e) { toast(e.message); }
 }
 
 function tbToggle(el) {

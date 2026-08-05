@@ -109,12 +109,19 @@ async function diskRestore(dir) {
   } catch (e) { toast(e.message); }
 }
 
+/** 探测是否设置过密码(无密码时清理不需要密码) */
+async function diskPassSet() {
+  try { const s = await apiPass.status(); return !!(s && s.set); } catch { return true; }
+}
+
 /** 删除托管中的工具(先停进程,密码确认;复用首页删除逻辑) */
 async function diskDeleteManaged(dir, name) {
-  const pass = prompt("删除工具「" + name + "」(目录将被物理删除,不可恢复)。\n输入管理员密码:", "");
-  if (pass === null) return;
+  const needPass = await diskPassSet();
+  const msg = "删除工具「" + name + "」(目录将被物理删除,不可恢复)。" + (needPass ? "\n输入管理员密码:" : "\n无密码,直接确认删除:");
+  const pass = needPass ? prompt(msg, "") : (confirm(msg) ? true : null);
+  if (pass === null || pass === false) return;
   try {
-    await apiDeleteTool(dir, pass);
+    await apiDeleteTool(dir, pass || "");
     toast("已删除: " + name);
     diskRefresh();
     load();
@@ -124,10 +131,12 @@ async function diskDeleteManaged(dir, name) {
 async function diskCleanSelected() {
   const dirs = Object.keys(diskSel);
   if (!dirs.length) return;
-  const pass = prompt("输入管理员密码以清理 " + dirs.length + " 个残留目录(删除不可恢复):", "");
-  if (pass === null) return;
+  const needPass = await diskPassSet();
+  const msg = "输入管理员密码以清理 " + dirs.length + " 个残留目录(删除不可恢复):";
+  const pass = needPass ? prompt(msg, "") : (confirm("确认清理 " + dirs.length + " 个残留目录(删除不可恢复)?") ? true : null);
+  if (pass === null || pass === false) return;
   try {
-    const j = await apiDisk.clean(dirs, pass);
+    const j = await apiDisk.clean(dirs, pass || "");
     const ok = (j.results || []).filter(r => r.removed).length;
     const kept = (j.results || []).filter(r => r.dirKept).length;
     toast("已清理 " + ok + " 个" + (kept ? ", " + kept + " 个被占用已转解除托管" : ""));
