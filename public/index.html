@@ -60,6 +60,17 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .del-btn{position:absolute;bottom:4px;right:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:var(--r2);opacity:.7;transition:.15s}
 .card:hover .del-btn,.del-btn:focus-visible{opacity:1}
 .del-btn:hover{color:var(--bad);background:#f8717114}
+/* 详情按钮(卡片左下 ⓘ,与删除按钮对称;点击弹详情而非打开) */
+.info-btn{position:absolute;bottom:4px;left:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:var(--r2);opacity:.7;transition:.15s;line-height:1}
+.card:hover .info-btn,.info-btn:focus-visible{opacity:1}
+.info-btn:hover{color:var(--brand);background:var(--brand-dim)}
+/* 卡片左上角操作组:暂停/恢复 + 重启(点击不打开工具) */
+.card-ctl{position:absolute;top:4px;left:4px;display:flex;gap:2px;opacity:.7;transition:.15s}
+.card:hover .card-ctl{opacity:1}
+.ctl-btn{font-size:10px;color:var(--text3);background:var(--surface);border:1px solid var(--line);border-radius:5px;cursor:pointer;padding:1px 4px;line-height:1.4;transition:.15s}
+.ctl-btn:hover{border-color:var(--line2);color:var(--text)}
+.ctl-btn[data-act="pause"]:hover{color:var(--warn);border-color:var(--warn)66}
+.ctl-btn[data-act="restart"]:hover{color:var(--brand);border-color:var(--brand)66}
 /* 能力徽标(卡片右下) */
 .caps{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
 .cap-chip{font-size:8.5px;padding:1px 5px;border-radius:5px;border:1px solid var(--line2);color:var(--text2);letter-spacing:.3px}
@@ -93,6 +104,9 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
   .card-foot{font-size:10px;gap:6px}
   .card-dot{width:6px;height:6px}
   .del-btn{bottom:8px;right:10px;padding:3px 6px;font-size:14px}
+  .info-btn{bottom:8px;left:10px;padding:3px 6px;font-size:14px}
+  .card-ctl{top:8px;left:10px;gap:4px}
+  .ctl-btn{font-size:12px;padding:2px 6px}
 }
 
 .sec{margin-bottom:28px}
@@ -144,6 +158,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
       <button class="sm btn" onclick="load()">刷新</button>
       <span class="cap-pill" id="capStatus" onclick="openCapDetail()" title="点击查看能力状态"></span>
       <button class="sm btn" onclick="openToolBackup()" title="备份/恢复工具">备份</button>
+      <button class="sm btn" onclick="openDiskMgr()" title="查看磁盘残留并清理">存储</button>
       <button class="sm btn" onclick="openPass()" title="修改管理员密码">密码</button>
       <button class="sm btn primary" onclick="openAdd()">+ 添加</button>
     </div>
@@ -231,6 +246,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="det-acts">
       <button class="btn sm" id="detOpen" onclick="openToolDetail()">打开</button>
       <button class="btn sm" id="detRestart" onclick="restartTool()" style="display:none">重启</button>
+      <button class="btn sm" id="detPause" onclick="togglePause()" style="display:none">暂停</button>
       <button class="btn sm danger" onclick="closeDet()">关闭</button>
     </div>
   </div>
@@ -262,8 +278,8 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 <div class="mask" id="adminMask">
   <div class="modal" style="max-width:340px">
     <h2>设置管理员密码</h2>
-    <div class="tip">用于删除工具等敏感操作</div>
-    <input class="finput" id="adminPass1" type="password" placeholder="至少 4 位">
+    <div class="tip">用于删除工具等敏感操作。密码可选:留空 = 无密码状态(任何输入都通过);想用密码就填一个。</div>
+    <input class="finput" id="adminPass1" type="password" placeholder="密码(留空 = 无密码)">
     <div class="acts"><button class="btn primary" id="adminOk">确认</button></div>
   </div>
 </div>
@@ -271,9 +287,9 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 <div class="mask" id="passMask">
   <div class="modal" style="max-width:340px">
     <h2>修改管理员密码</h2>
-    <div class="tip">首次设置后可随时修改</div>
-    <input class="finput" id="oldPass" type="password" placeholder="旧密码">
-    <input class="finput" id="newPass1" type="password" placeholder="新密码(至少 4 位)" style="margin-top:8px">
+    <div class="tip">留空新密码 = 清除密码(回到无密码状态)。已有密码时需先输入旧密码。</div>
+    <input class="finput" id="oldPass" type="password" placeholder="旧密码(已设置时必填)">
+    <input class="finput" id="newPass1" type="password" placeholder="新密码(留空 = 无密码)" style="margin-top:8px">
     <div class="acts">
       <button class="btn" onclick="closePass()">取消</button>
       <button class="btn primary" id="passOk">确认修改</button>
@@ -300,8 +316,30 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
   </div>
 </div>
 
+<!-- 存储管理弹窗:磁盘残留清单(注册表看不见的垃圾) -->
+<div class="mask" id="diskMask">
+  <div class="modal" style="max-width:640px">
+    <h2>存储管理</h2>
+    <div class="tip">列出 tools/ 目录下所有内容(含已解除托管、无 manifest 的幽灵目录、无效配置)。勾选后可清理;已解除托管可恢复。清理需管理员密码。</div>
+    <div class="disk-actions" style="display:flex;gap:8px;margin:10px 0">
+      <button class="btn" onclick="diskRefresh()">刷新</button>
+      <button class="btn danger" onclick="diskCleanSelected()" id="diskCleanBtn" disabled>清理所选</button>
+      <span id="diskStats" style="font-size:11px;color:var(--text3);align-self:center"></span>
+    </div>
+    <div id="diskList" style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px">
+      <div class="tip" style="text-align:center;padding:20px">加载中…</div>
+    </div>
+    <div class="acts" style="margin-top:10px">
+      <button class="btn" onclick="closeDiskMgr()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <script src="/js/api.js"></script>
 <script src="/js/ui.js"></script>
+<script src="/js/cards.js"></script>
+<script src="/js/detail.js"></script>
+<script src="/js/disk.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

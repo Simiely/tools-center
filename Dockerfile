@@ -1,7 +1,9 @@
 FROM node:22-slim
 
 # zip 解压支持
-RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/*
+# 国内网络:apt 源换清华镜像,避免 deb.debian.org 拉取极慢(可选:注释掉即用官方源)
+RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g; s|security.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list 2>/dev/null || true \
+ && apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -13,8 +15,9 @@ COPY public ./public
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# 数据卷:工具目录(放 tool.json 与工具代码)与运行时数据(日志)
-VOLUME ["/app/tools", "/app/data"]
+# 注意:不再声明 VOLUME。此前 VOLUME ["/app/tools","/app/data"] 与本机 docker compose
+# Recreate 的 bind mount 冲突,导致重建后挂载回退/匿名卷接管、宿主目录被波及(2026-08-05 事故)。
+# 数据目录统一由 compose 显式 bind mount(见 docker-compose.local.yml),这里不重复声明。
 
 EXPOSE 8080
 

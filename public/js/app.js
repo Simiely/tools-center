@@ -1,5 +1,6 @@
 // public/js/app.js - 主逻辑:加载/添加工具/密码/事件绑定/初始化
-// 依赖: api.js($, toast, api*), ui.js(renderTabs/renderCards/loadCaps/loadLog/openDetail 等)
+// 依赖: api.js($, toast, api*), ui.js(esc/capLabel/loadCaps), cards.js(renderTabs/renderCards),
+//       detail.js(openDetail/loadLog), disk.js(openDiskMgr)
 
 /* ---------- 加载工具列表 ---------- */
 async function load() {
@@ -20,11 +21,51 @@ async function load() {
 document.addEventListener("click", e => {
   const del = e.target.closest(".del-btn");
   if (del) { e.stopPropagation(); delTool(del.dataset.id, del.dataset.name); return; }
+  // 卡片左上角控制按钮:暂停/恢复、重启(不打开工具)
+  const ctl = e.target.closest(".ctl-btn");
+  if (ctl) {
+    e.stopPropagation();
+    const id = ctl.dataset.id;
+    if (ctl.dataset.act === "pause") cardTogglePause(id, ctl.dataset.paused === "1");
+    else if (ctl.dataset.act === "restart") cardRestart(id);
+    return;
+  }
+  // 详情按钮(卡片左下 ⓘ):点击才弹详情;卡片本体直接打开工具
+  const info = e.target.closest(".info-btn");
+  if (info) {
+    e.stopPropagation();
+    const t = (window.__tools || []).find(x => x.id === info.dataset.id);
+    if (t) openDetail(t);
+    return;
+  }
   const card = e.target.closest(".card");
   if (!card) return;
   const t = (window.__tools || []).find(x => x.id === card.dataset.id);
-  if (t) openDetail(t);
+  if (t) openTool(t); // 直接打开,不弹窗
 });
+
+/** 直接打开工具(app 反代 /link 新标签页) */
+function openTool(t) {
+  window.open(t.type === "link" ? t.url : "/tool/" + t.id + "/", "_blank");
+}
+
+/** 卡片上的暂停/恢复(不弹详情,直接切换) */
+async function cardTogglePause(id, paused) {
+  try {
+    await apiPause(id, !paused);
+    toast(!paused ? "已暂停" : "已恢复");
+    load();
+  } catch (e) { toast(e.message); }
+}
+
+/** 卡片上的重启(不弹详情) */
+async function cardRestart(id) {
+  try {
+    await apiRestart(id);
+    toast("已重启");
+    setTimeout(load, 800);
+  } catch (e) { toast(e.message); }
+}
 
 /* ---------- 添加工具 ---------- */
 let addType = "app", advOpen = !1;
@@ -62,9 +103,12 @@ function pickZip() { $("fZipInput").value = ""; $("fZipInput").click(); }
 function handleDrop(files) { if (files.length) { selZip = files[0]; $("fZipInfo").textContent = selZip.name + " (" + Math.round(selZip.size / 1024) + " KB)"; } }
 $("fZipInput").addEventListener("change", () => { const f = $("fZipInput").files[0]; if (f) { selZip = f; $("fZipInfo").textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)"; } });
 
+let adding = false; // 防重复提交锁(连点会创建多个副本)
 async function saveAdd() {
+  if (adding) return; // 提交中,忽略重复点击
   const spec = collectSpec();
   if (!spec.name) { toast("请填写名称"); return; }
+  adding = true;
   try {
     let j;
     if (spec.git) {
@@ -81,6 +125,7 @@ async function saveAdd() {
     selZip = null; $("fZipInfo").textContent = "未选择";
     toast("已创建"); load();
   } catch (e) { toast(e.message); }
+  finally { adding = false; } // 无论成败都解锁(下次可再添加)
 }
 
 // manifest 在线校验(不写盘):POST 内容 → 显示错误/归一化结果
@@ -112,29 +157,38 @@ function closeCfm(ok) { const pass = $("cfmPass").value; $("cfmMask").classList.
 $("cfmOk").addEventListener("click", () => closeCfm(!0));
 $("cfmPass").addEventListener("keydown", e => { if (e.key === "Enter") closeCfm(!0); });
 async function delTool(id, name) {
-  const pass = await cfmConfirm("确认删除 " + name + " ?");
+  // 删除前探测:工具是否仍存在于注册表(幽灵卡片 = 前端有卡片但后端查无此人)
+  let ghost = false;
+  try {
+    const probe = await getJSON("/api/tools/" + id);
+    ghost = !(probe && probe.ok && probe.tool);
+  } catch { ghost = true; }
+  // 幽灵卡片在确认弹窗(输密码处)就明示,避免用户误以为在删正常工具
+  const pass = await cfmConfirm(
+    ghost
+      ? "⚠️ 该工具已不存在(残留卡片),删除仅清理前端记录,不影响数据。\n确认删除 " + name + " ?"
+      : "确认删除 " + name + " ?"
+  );
   if (!pass) return;
   try {
     const j = await apiDeleteTool(id, pass);
     toast(j.dirKept ? "已解除托管(挂载目录保留)" : "已删除");
+  } catch (e) {
+    // 兜底:删除失败(如工具已不在注册表)也刷新列表,幽灵卡片随之消失
+    toast(e.message);
+  } finally {
     load();
-  } catch (e) { toast(e.message); }
+  }
 }
 
-/* ---------- 管理员密码(首次设置 / 修改) ---------- */
-async function checkAdminPass() {
-  try {
-    const j = await apiPass.status();
-    if (!j.set) { $("adminMask").classList.add("show"); setTimeout(() => $("adminPass1").focus(), 200); }
-  } catch {}
-}
+/* ---------- 管理员密码(可选:初次不强制,想用才设置;空 = 无密码) ---------- */
+// 初次登录不再强制设置密码:去掉自动弹窗,用户想设置时点顶栏「密码」即可
 async function setAdminPass() {
   const p = $("adminPass1").value;
-  if (!p || p.length < 4) { toast("密码至少 4 位"); return; }
   try {
     const j = await apiPass.set(p);
     if (!j.ok) throw new Error(j.error);
-    $("adminMask").classList.remove("show"); toast("已设置");
+    $("adminMask").classList.remove("show"); toast(p ? "已设置密码" : "已清除密码(无密码状态)");
   } catch (e) { toast(e.message); }
 }
 $("adminOk").addEventListener("click", setAdminPass);
@@ -144,11 +198,10 @@ async function openPass() { $("oldPass").value = ""; $("newPass1").value = ""; $
 function closePass() { $("passMask").classList.remove("show"); }
 async function changePass() {
   const oldP = $("oldPass").value, newP = $("newPass1").value;
-  if (!newP || newP.length < 4) { toast("新密码至少 4 位"); return; }
   try {
     const j = await apiPass.change(oldP, newP);
     if (!j.ok) throw new Error(j.error);
-    closePass(); toast("密码已修改");
+    closePass(); toast(newP ? "密码已修改" : "已清除密码(无密码状态)");
   } catch (e) { toast(e.message); }
 }
 $("passOk").addEventListener("click", changePass);
@@ -240,6 +293,6 @@ async function tbRestoreSelected() {
 }
 
 /* ---------- 初始化 ---------- */
-checkAdminPass();
+// 密码可选:初次登录不强制设置(不再自动弹窗),用户想用密码时点顶栏「密码」设置
 document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeToolBackup(); } });
 load();

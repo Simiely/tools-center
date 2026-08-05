@@ -29,6 +29,28 @@ async function apiRestart(id) {
   return j;
 }
 
+/** 暂停/恢复工具(暂停 = 停止进程且不自动拉起) */
+async function apiPause(id, paused) {
+  const j = await (await fetch("/api/tools/" + id + (paused ? "/pause" : "/resume"), { method: "POST" })).json();
+  if (!j.ok) throw new Error(j.error);
+  return j;
+}
+
+/** 存储管理:磁盘残留清单 / 清理 / 恢复托管 */
+const apiDisk = {
+  list: () => getJSON("/api/admin/disk"),
+  clean: async (dirs, pass) => {
+    const j = await (await fetch("/api/admin/disk/clean", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dirs, pass }) })).json();
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
+  restore: async (id) => {
+    const j = await (await fetch("/api/admin/disk/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) })).json();
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
+};
+
 /** 读取工具日志 */
 async function apiLogs(id) {
   return getJSON("/api/logs/" + id);
