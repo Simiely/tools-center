@@ -17,18 +17,22 @@ Node 零依赖的"轻量工具统一宿主":个人写的各种轻量小工具以
 
 ```
 server.mjs(入口:组装 + 路由;对 /tool/<id> 无尾斜杠做 301 规范化)
-├── lib/registry.js   扫描 tools/*/tool.json → Map<id, ToolSpec>(校验 type/端口/冲突)
-│                     createTool/removeTool(在线增删,自动建目录/分配端口/生成示例)
-├── lib/manager.js    进程托管(app 型):spawn(状态与 spec 解耦)/ 退避拉起 / SIGTERM→SIGKILL / 健康轮询
-├── lib/proxy.js      反代(app 型)/tool/<id>;HTML 响应自动注入 __BASE__;link 型 302;WS 升级预留
-├── lib/logger.js     stdout/stderr → data/logs/<id>.log(按天滚动)+ 内存 200 行
-└── lib/config.js     常量:端口/超时/间隔/退避参数
-public/index.html     首页:分组卡片网格、状态点、手动刷新(无轮询)、link 标记、＋添加工具/删除/上传
+├── lib/core/registry.js   扫描 tools/*/tool.json → Map<id, ToolSpec>(校验 type/端口/冲突)
+│                          createTool/removeTool(在线增删;removeTool 幽灵幂等兜底)
+├── lib/core/lifecycle.js  生命周期状态:removedSet(已解除托管)/pausedSet(已暂停)持久化
+├── lib/core/disk-ops.js   存储管理:磁盘扫描分类(托管/无效/解除/幽灵)/清理/恢复/先停进程再删
+├── lib/core/manager.js    进程托管(app 型):spawn(状态与 spec 解耦)/ 退避拉起 / SIGTERM→SIGKILL / 暂停联动 / 健康轮询
+├── lib/core/proxy.js      反代(app 型)/tool/<id>;HTML 响应自动注入 __BASE__;link 型 302;WS 升级
+├── lib/core/logger.js     stdout/stderr → data/logs/<id>.log(按天滚动)+ 内存 200 行
+└── lib/core/config.js     常量:端口/超时/间隔/退避参数
+lib/routes/                路由按域拆分(v0.11):tools-proxy/tools-crud/tools-files/tools-prefix/backup/webdav/admin/disk/cap/helpers/index
+public/js/                 前端六文件:api(请求)/ui(基础)/cards(渲染)/detail(详情)/disk(存储)/app(主逻辑)
 ```
 
 - **单容器 + 子进程**:工具全是零依赖 Node,一个运行时全装下;不搞每工具一容器
-- **依赖单向**:`server.mjs → lib/*`,模块间不绕环;新能力以新模块接入
+- **依赖单向**:`server.mjs → lib/*`,模块间不绕环(lifecycle 不依赖 registry,避免循环);新能力以新模块接入
 - **GET /api/tools 访问即重扫**:放目录+tool.json → 刷新页面即出现并自动启动(manager.sync 增量:新增启动、删除停止)
+- **状态持久化独立**:removed/paused 是"标记",与注册表 Map(纯配置)分离;重启不丢
 - 完整设计(目录结构 / tool.json 规范 / Docker 化 / 安全):见 [`DESIGN.md`](DESIGN.md);接入操作见 [`docs/使用指南.md`](docs/使用指南.md)
 
 ## 三、关键决策与方案
@@ -96,6 +100,33 @@ public/index.html     首页:分组卡片网格、状态点、手动刷新(无�
 - 问题:早期在线添加要填 10 个字段 + 记端口段 + 手动放代码,门槛太高
 - 解决:`createTool` 自动补全:id 未填自动生成、端口自动分配段内最小空闲、空目录自动生成可运行示例 + 默认 cmd;前端「＋ 添加工具」仅名称必填,「▸ 高级设置」折叠其余
 - 预防:交互设计先问"哪个字段真的需要用户操心"
+
+## 问题:幽灵卡片(前端有卡片、后端查无此人)为什么删不掉?
+
+**TL;DR**:后端幂等删除 + 删除前探测接口,双保险让"幽灵卡片"永远可清理。
+
+- 问题:工具目录被外部删除/挂载失效/manifest 损坏后,注册表查无此 id,但前端页面还留着卡片;DELETE 报"工具不存在" → 用户永远删不掉这张卡
+- 根因:`removeTool` 对查无此 id 直接抛错,没有"残留清理"语义
+- 解决:① 后端 `removeTool` 幽灵分支幂等删除(目录存在则物理删,不存在则视为已删,返回 `ghost:true`);② 前端删除前先 `GET /api/tools/<id>` 探测——404 判幽灵,确认弹窗明示「残留卡片」
+- 预防:所有"删除"接口对目标不存在都应幂等成功(残留清理),而非报错卡死
+
+## 问题:为什么要拆 lifecycle.js,把 removed/paused 从 registry 迁走?
+
+**TL;DR**:注册表是"纯配置",生命周期是"可变状态",两者生命周期不同,拆开避免循环依赖与职责混杂。
+
+- 问题:registry.js 里塞了扫描/校验/CRUD + removedSet/pausedSet 持久化,327 行;且 restoreTool 内部调 scanTools 造成模块内隐式耦合
+- 根因:配置与状态混在一个模块,状态改动(暂停/解除)会牵连扫描逻辑
+- 解决:新建 `lib/core/lifecycle.js` 只管理两个持久化 Set(不依赖 registry,单向依赖);`restoreTool` 只清标记,**扫描由调用方负责**(routes/disk-ops 补 `scanTools()`)
+- 预防:状态类逻辑独立成模块,模块间依赖保持单向
+
+## 问题:Windows 下 npm test 为什么偶发 DLL 初始化失败?
+
+**TL;DR**:`node --test` 并发 spawn 测试子进程在 Windows 上偶发 0xC0000142;串行 + 显式文件列表根治。
+
+- 问题:npm test 跑着跑着报 `exitCode: 3221225794`(0xC0000142 DLL init failed),单独跑每个文件都过
+- 根因:Windows 下 `node --test` 默认高并发 spawn 子进程,偶发 DLL 加载竞争;且 npm 用 cmd 不展开 glob,node 自展开 glob 行为不稳
+- 解决:test 脚本改为 `--test-concurrency=1` + **显式文件列表**(不用 `tests/*.test.mjs` glob)
+- 预防:Windows 上 node --test 一律串行 + 显式列表;bash 直跑时 glob 正常,但 npm 环境要兼容 cmd
 
 ## 四、每次改动的动作清单
 

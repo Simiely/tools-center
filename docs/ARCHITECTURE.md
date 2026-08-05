@@ -119,22 +119,25 @@ HTML 响应注入 __BASE__ = /tool/<id>(子路径挂载)
 
 ## 4. 模块职责表
 
-### lib/core/（内核层，12 模块）
+### lib/core/（内核层，15 模块）
 
 | 模块 | 行数 | 职责 | 依赖 |
 |---|---|---|---|
-| `config.js` | 31 | 常量 + 路径 + 能力白名单（单一来源） | 无 |
-| `auth.js` | 30 | 管理员密码（sha256 摘要存储） | config |
-| `upload.js` | 80 | multipart 解析 / zip 解压(炸弹防护) / 路径校验 | config |
-| `git.js` | 80 | Git 仓库导入(浅克隆+工具识别+冲突防护) | config |
+| `config.js` | 37 | 常量 + 路径 + 能力白名单（单一来源） | 无 |
+| `auth.js` | 47 | 管理员密码（sha256 摘要,空密码=无密码状态） | config |
+| `lifecycle.js` | 57 | 生命周期状态:removedSet(已解除托管)/pausedSet(已暂停)持久化 | config |
+| `upload.js` | 98 | multipart 解析 / zip 解压(炸弹防护) / 路径校验 | config |
+| `git.js` | 76 | Git 仓库导入(浅克隆+工具识别+冲突防护) | config |
 | `manifest.js` | 70 | 声明解析：V1 tool.json 自动映射 V2 manifest | config |
-| `registry.js` | 180 | 注册表：扫描/校验/创建/删除（单一职责） | manifest, capability |
-| `manager.js` | 145 | 进程托管：spawn/退避重启/优雅停止/健康检查（cmd 防御 + 删除时释放日志句柄） | config, registry, logger |
-| `proxy.js` | 110 | 反向代理 + link 302 + WebSocket 升级 | config, registry |
-| `logger.js` | 90 | 工具日志：文件滚动 + 内存环形缓冲 + detachLog 释放 | config |
-| `backup.js` | 145 | 本地备份/恢复 + WebDAV 上传下载 | registry, webdav |
-| `webdav.js` | 67 | WebDAV 协议客户端（MKCOL/PUT/GET） | config |
-| `capability.js` | 53 | 能力装配器：env 注入 / 校验 / ensure 触发 | capabilities |
+| `registry.js` | 256 | 注册表：扫描/校验/创建/删除（状态已迁 lifecycle） | manifest, capability, lifecycle |
+| `manager.js` | 167 | 进程托管：spawn/退避重启/优雅停止/健康检查 + 暂停联动 | config, registry, logger |
+| `proxy.js` | 111 | 反向代理 + link 302 + WebSocket 升级 + __BASE__ 注入 | config, registry |
+| `logger.js` | 85 | 工具日志：文件滚动 + 内存环形缓冲 + detachLog 释放 | config |
+| `disk-ops.js` | 90 | 存储管理：磁盘扫描分类/物理清理/恢复托管/先停进程再删 | config, registry, lifecycle, manager |
+| `backup.js` | 144 | 本地备份/恢复 + WebDAV 上传下载 | registry, webdav |
+| `webdav.js` | 66 | WebDAV 协议客户端（MKCOL/PUT/GET） | config |
+| `capability.js` | 52 | 能力装配器：env 注入 / 校验 / ensure 触发 | capabilities |
+| `zip.js` | 193 | 零依赖 zip 打包/解包(CRC 校验 + 防 zip-slip) | config |
 
 ### lib/capabilities/（能力层）
 
@@ -148,13 +151,13 @@ HTML 响应注入 __BASE__ = /tool/<id>(子路径挂载)
 
 | 文件 | 职责 |
 |---|---|
-| `lib/routes/` | 路由注册表(按域拆分,v0.10.1):`index.js`(合并+matchRoute) + `helpers.js`(共享工具) + `tools.js`/`backup.js`/`webdav.js`/`admin.js`/`cap.js`(五域) |
+| `lib/routes/` | 路由注册表(按域拆分,v0.11.0):`index.js`(合并+matchRoute) + `helpers.js`(共享工具) + `tools-proxy`(反代)/`tools-crud`(增删查)/`tools-files`(日志+上传)/`tools-prefix`(单工具控制)/`backup`/`webdav`/`admin`(密码)/`disk`(存储)/`cap`(能力+静态) |
 | `lib/sdk.js` | 工具侧 SDK（capBrowser/capStorageDir，懒加载封装） |
-| `public/` | 门户 UI(零框架):`index.html` + `js/{api,ui,app}.js`(拆分,v0.9) |
+| `public/` | 门户 UI(零框架):`index.html` + `js/{api,ui,cards,detail,disk,app}.js`(六文件,v0.11) |
 | `server.mjs` | 入口薄层(43 行):启动序列 + createServer + upgrade + listen |
 | `templates/tool-template/` | 最小可运行工具模板 |
 
-> 路由扩展约定(v0.10.1):新增 API 按域加 `lib/routes/<域>.js` 导出路由数组,`index.js` 一行 `...<域>Routes` 接入,不碰其他文件。
+> 路由扩展约定(v0.11.0):新增 API 按域加 `lib/routes/<域>.js` 导出路由数组,`index.js` 一行 `...<域>Routes` 接入,不碰其他文件。
 
 ---
 
@@ -167,7 +170,9 @@ tools/<id>/            ← 代码 + manifest(挂载卷)
 data/tools/<id>/       ← 工具数据(CAP_STORAGE_DIR 指向这里,备份边界)
 data/backups/<ts>/     ← 本地备份(含 _manifest.json 快照)
 data/logs/<id>.log     ← 滚动日志(按天,保留7天)
-data/admin-pass.json   ← 管理员密码摘要
+data/admin-pass.json   ← 管理员密码摘要(不存在 = 无密码)
+data/removed-tools.json← 已解除托管工具 id(扫描跳过,物理目录保留)
+data/paused-tools.json ← 已暂停工具 id(不自动启动/拉起)
 data/webdav.json       ← WebDAV 配置
 ```
 
@@ -187,16 +192,22 @@ data/webdav.json       ← WebDAV 配置
 |---|---|---|
 | GET | /api/tools | 工具列表（500ms 节流重扫） |
 | POST | /api/tools | 创建工具（app/link/V2 manifest） |
-| DELETE | /api/tools | 删除工具（需管理员密码） |
+| DELETE | /api/tools | 删除工具（需管理员密码,幽灵幂等删除返回 ghost:true） |
 | POST | /api/tools/validate | manifest 在线校验（不写盘） |
 | POST | /api/tools/import | Git 导入 |
+| POST | /api/tools/restore | 恢复已解除托管的工具 |
+| GET | /api/tools/<id> | 单工具查询（删除前探测,404 = 幽灵） |
 | POST | /api/tools/<id>/restart | 重启工具 |
+| POST | /api/tools/<id>/pause \| /resume | 暂停/恢复工具（持久化） |
 | GET | /api/capabilities | 能力状态（含 error） |
 | POST | /api/capabilities/<name>/ensure | 懒加载触发 |
 | GET | /api/logs/<id> | 工具日志（最近 200 行） |
 | POST | /api/backup · /api/restore | 本地备份/恢复 |
 | GET/POST | /api/webdav[/test/upload/download] | WebDAV 配置与同步 |
-| GET/POST | /api/admin/pass | 管理员密码 |
+| GET/POST | /api/admin/pass | 管理员密码(空 = 清除) |
+| GET | /api/admin/disk | 存储管理:磁盘残留清单(四类分类) |
+| POST | /api/admin/disk/clean | 清理残留目录(需密码,托管中先停进程) |
+| POST | /api/admin/disk/restore | 恢复托管 |
 | POST | /api/files | 文件/zip 上传 |
 | GET | /tool/<id>/... | 工具反代入口 |
 
@@ -241,8 +252,8 @@ data/webdav.json       ← WebDAV 配置
 ## 8. 测试与质量
 
 ```bash
-npm test          # 单元测试(node --test,29 用例)
-npm run check     # 全模块语法检查
+npm test          # 单元测试(node --test,50 用例;串行防 Windows DLL 偶发)
+npm run check     # 全模块语法检查(39 文件,scripts/check.mjs 跨平台)
 ```
 
 CI（`.github/workflows/docker-build.yml`）：
