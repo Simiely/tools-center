@@ -187,8 +187,8 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
       <div class="frow"><label>目标地址</label><input class="finput" id="fUrl" placeholder="http://..."></div>
     </div>
     <div id="fGitRows" style="display:none">
-      <div class="tip">从 Git 仓库导入：自动识别 manifest.json/tool.json（根目录或一级子目录），克隆后立即托管运行。</div>
-      <div class="frow"><label>仓库地址</label><input class="finput" id="fGitUrl" placeholder="https://github.com/user/repo.git"></div>
+      <div class="tip">从 Git 仓库导入：自动识别 manifest.json/tool.json（根目录或一级子目录），克隆后立即托管运行。<b style="color:var(--brand)">也可填 Release 的 .zip 链接</b>（自动下载创建）。</div>
+      <div class="frow"><label>仓库/链接</label><input class="finput" id="fGitUrl" placeholder="https://github.com/user/repo.git 或 https://.../release.zip"></div>
       <div class="frow"><label>分支（可选）</label><input class="finput" id="fGitBranch" placeholder="main / 留空默认"></div>
     </div>
     <div id="fAppRows">
