@@ -69,10 +69,25 @@ async function apiCreate(spec) {
 }
 
 /** Git 导入工具 */
+/** 导入工具(Git 仓库或 .zip 链接)。v0.11.4 起后端异步任务化:立即返回 taskId,轮询进度,完成返回 {ok,created,tool} */
+let onImportProgress = null; // 进度回调(status/message/progress),由 UI 层设置
 async function apiImport(url, branch, id) {
-  const j = await (await fetch("/api/tools/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, branch: branch || undefined, id: id || undefined }) })).json();
+  const j = await postJSON("/api/tools/import", { url, branch: branch || undefined, id: id || undefined });
   if (!j.ok) throw new Error(j.error);
-  return j;
+  if (!j.taskId) return j; // 兼容同步返回
+  if (onImportProgress) onImportProgress({ status: "queued", message: "任务已创建", progress: 0 });
+  const deadline = Date.now() + 6 * 60 * 1000; // 总超时 6 分钟
+  for (;;) {
+    await new Promise((r) => setTimeout(r, 1000));
+    let s;
+    try {
+      s = await (await fetch("/api/tools/import/status/" + j.taskId, { cache: "no-store" })).json();
+    } catch { continue; }
+    if (onImportProgress) onImportProgress(s);
+    if (s.status === "done") return s.result ? { ok: true, ...s.result } : { ok: true };
+    if (s.status === "error") throw new Error(s.message || "导入失败");
+    if (Date.now() > deadline) throw new Error("导入超时(超过 6 分钟),请检查网络/代理后重试");
+  }
 }
 
 /** 上传 zip 到工具目录并重启 */

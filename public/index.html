@@ -147,6 +147,14 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .preview{background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--text2);white-space:pre-wrap;max-height:100px;overflow:auto}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);color:var(--text);padding:10px 22px;border-radius:24px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:110;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 .toast.show{opacity:1}
+/* 导入进度条(2026-08-06):zip 链接/Git 导入异步任务,避免干等 */
+#importBar{position:fixed;top:74px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 18px;width:min(360px,86vw);z-index:112;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+#importBar .ib-msg{font-size:12px;color:var(--text);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#importBar .ib-msg .ib-pct{font-size:11px;color:var(--brand);font-weight:600}
+#importBar .ib-track{height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+#importBar .ib-fill{height:100%;background:linear-gradient(90deg,var(--brand),#ff9800);border-radius:3px;transition:width .4s ease}
+#importBar.ib-err .ib-msg{color:var(--bad)}
+#importBar.ib-err .ib-fill{background:var(--bad)}
 </style>
 </head>
 <body>
@@ -221,9 +229,13 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="frow" style="align-items:flex-start"><label></label><button class="btn" onclick="validateManifestUI()" style="width:auto">✓ 校验配置</button><div id="fValidateResult" style="display:none;margin-left:8px;font-size:12px;padding-top:7px"></div></div>
     <div class="acts">
       <button class="btn" onclick="closeAdd()">取消</button>
-      <button class="btn primary" onclick="saveAdd()">保存并启用<span style="font-weight:400;font-size:11px;opacity:.8">(未填名称时从 zip 自动识别)</span></button>
+      <button class="btn primary" id="saveBtn" onclick="saveAdd()">保存并启用<span style="font-weight:400;font-size:11px;opacity:.8">(未填名称时从 zip 自动识别)</span></button>
     </div>
   </div>
+</div>
+<div id="importBar" style="display:none">
+  <div class="ib-msg"><span id="importMsg">正在导入…</span><span class="ib-pct" id="importPct"></span></div>
+  <div class="ib-track"><div class="ib-fill" id="importFill" style="width:0%"></div></div>
 </div>
 <input type="file" id="fZipInput" accept=".zip" hidden>
 
