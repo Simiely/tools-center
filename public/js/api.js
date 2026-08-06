@@ -85,6 +85,15 @@ async function apiUploadZip(id, zip) {
   await fetch("/api/tools/" + id + "/restart", { method: "POST" });
 }
 
+/** 零输入上传(2026-08-06):纯 zip 不带 path,后端从 zip 内 tool.json 自动创建/更新工具 */
+async function apiUploadZipAuto(zip) {
+  const fd = new FormData();
+  fd.append("file", zip, zip.name);
+  const j = await (await fetch("/api/files", { method: "POST", body: fd })).json();
+  if (!j.ok) throw new Error(j.error);
+  return j;
+}
+
 /** 管理员密码:查询是否已设置 / 首次设置 / 修改 */
 const apiPass = {
   status: () => getJSON("/api/admin/pass"),

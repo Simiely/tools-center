@@ -116,7 +116,21 @@ let adding = false; // 防重复提交锁(连点会创建多个副本)
 async function saveAdd() {
   if (adding) return; // 提交中,忽略重复点击
   const spec = collectSpec();
-  if (!spec.name) { toast("请填写名称"); return; }
+  // 零输入模式(2026-08-06):未填名称但选了 zip(app 型)→ 纯 zip 上传,后端从 zip 内 tool.json 自动创建/更新
+  if (!spec.name && addType === "app" && selZip) {
+    adding = true;
+    try {
+      const j = await apiUploadZipAuto(selZip);
+      closeAdd();
+      ["fName", "fUrl", "fId", "fDesc", "fGroup", "fIcon", "fCmd", "fPort", "fHealth", "fGitUrl", "fGitBranch"].forEach(x => { const el = document.getElementById(x); if (el) el.value = ""; });
+      selZip = null; $("fZipInfo").textContent = "未选择";
+      toast(j.created ? "已从 zip 自动创建" : "已用 zip 覆盖更新");
+      load();
+    } catch (e) { toast(e.message); }
+    finally { adding = false; }
+    return;
+  }
+  if (!spec.name) { toast("请填写名称,或直接拖入带 tool.json 的 zip"); return; }
   adding = true;
   try {
     let j;
