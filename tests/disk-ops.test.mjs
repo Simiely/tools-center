@@ -14,6 +14,7 @@ const { initCapabilities } = await import("../lib/capabilities/index.js");
 const registry = await import("../lib/core/registry.js");
 const lifecycle = await import("../lib/core/lifecycle.js");
 const disk = await import("../lib/core/disk-ops.js");
+const dataClassify = await import("../lib/core/data-classify.js");
 const manager = await import("../lib/core/manager.js");
 
 before(async () => { await initCapabilities(); });
@@ -180,7 +181,7 @@ function writeDataTool(id, port, dataFiles) {
 
 test("classifyDirFiles:数据/垃圾/程序三分类正确(SQLite 三件套连带,硬保护)", () => {
   const dir = writeDataTool("data-tool", 8160);
-  const cls = disk.classifyDirFiles(dir, []);
+  const cls = dataClassify.classifyDirFiles(dir, []);
   const rels = cls.data.map(f => f.rel);
   assert.ok(rels.includes("credits.db"), "db 应归数据");
   assert.ok(rels.includes("credits.db-wal"), "wal 应连带归数据");
@@ -198,7 +199,7 @@ test("classifyDirFiles:工具声明 dataFiles 叠加识别", () => {
   const dir = writeDataTool("declared-tool", 8161, ["custom.dat", "*.cfg"]);
   fs.writeFileSync(path.join(dir, "custom.dat"), "c", "utf8");
   fs.writeFileSync(path.join(dir, "app.cfg"), "c", "utf8");
-  const cls = disk.classifyDirFiles(dir, ["custom.dat", "*.cfg"]);
+  const cls = dataClassify.classifyDirFiles(dir, ["custom.dat", "*.cfg"]);
   const rels = cls.data.map(f => f.rel);
   assert.ok(rels.includes("custom.dat"), "声明的 dataFiles 应识别为数据");
   assert.ok(rels.includes("app.cfg"), "声明 glob 应识别为数据");
@@ -267,6 +268,6 @@ test("zipToTool:覆盖升级保留数据文件(程序替换,数据放回)", asyn
   // 程序更新
   assert.equal(fs.readFileSync(path.join(oldDir, "server.mjs"), "utf8"), "// v2 upgraded", "server.mjs 应为新版");
   // 数据声明(新 tool.json)仍生效 → 后续可清理
-  const after = disk.classifyDirFiles(oldDir, ["*.db*", "wb-*.json"]);
+  const after = dataClassify.classifyDirFiles(oldDir, ["*.db*", "wb-*.json"]);
   assert.ok(after.data.some(f => f.rel === "credits.db"), "升级后数据仍被识别");
 });

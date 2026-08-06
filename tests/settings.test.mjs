@@ -11,13 +11,14 @@ process.env.TOOLS_DIR = path.join(tmp, "tools");
 process.env.DATA_DIR = path.join(tmp, "data");
 
 const settings = await import("../lib/core/settings.js");
+const modules = await import("../lib/core/modules.js");
 const routesMod = await import("../lib/routes/index.js");
 
 after(() => { try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {} });
 
 test("getModules:默认全部开启", () => {
   const m = settings.getModules();
-  for (const k of Object.keys(settings.MODULE_DEFAULTS)) {
+  for (const k of Object.keys(modules.MODULE_DEFAULTS)) {
     assert.equal(m[k], true, k + " 默认应开启");
   }
 });

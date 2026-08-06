@@ -2,6 +2,13 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.11.8 (2026-08-06) · 架构收敛:模块注册表 + 数据识别公共层
+
+- **模块注册表 `lib/core/modules.js`(单一事实来源)**:模块清单/默认开关/展示信息集中一处,settings(开关)与 routes(挂载)共用;新增模块只改 1 处注册
+- **数据识别抽公共层 `lib/core/data-classify.js`**:classifyDirFiles 从 disk-ops 抽出,disk-ops(存储)与 tools-files(接入)共用——消除"接入模块依赖管理模块"的反向耦合;附加模块之间禁止直接 import,公共能力一律下沉 `lib/core/`
+- **扩展点文档化**:架构梳理新增「如何新增一个附加模块(4 步)」——注册/实现/挂载/前端入口,主干零改动;微内核插件注册表成形
+- 测试引用同步(settings/disk-ops),68/68 全过;代码净减(disk-ops 去重约 90 行)
+
 ## v0.11.7 (2026-08-06) · 整体功能开关(附加模块可启停)
 
 - **功能开关中心**:新增 `lib/core/settings.js`——`data/settings.json` 持久化 + 环境变量覆盖(`MODULES_STORAGE=0` 等);6 个附加模块(storage 存储/backup 备份/webdav 云同步/auth 密码/capabilities 能力/import 在线导入)默认全开
