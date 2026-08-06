@@ -342,4 +342,7 @@ async function tbRestoreSelected() {
 /* ---------- 初始化 ---------- */
 // 密码可选:初次登录不强制设置(不再自动弹窗),用户想用密码时点顶栏「密码」设置
 document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeToolBackup(); } });
+// 全局错误兜底(2026-08-06):任何 JS 错误/请求异常都 toast 提示,避免"点按钮无反应"难排查
+window.addEventListener("error", (e) => { try { toast("脚本错误: " + ((e && (e.message || (e.error && e.error.message))) || "未知")); } catch {} });
+window.addEventListener("unhandledrejection", (e) => { try { toast("请求异常: " + ((e && e.reason && (e.reason.message || e.reason)) || "未知")); } catch {} });
 load();
