@@ -77,7 +77,8 @@ async function cardRestart(id) {
 }
 
 /* ---------- 添加工具 ---------- */
-let addType = "app", advOpen = !1;
+let advOpen = !1;
+let __importDisabled = false; // import 模块关闭时(loadSettings 设置),禁止 zip/git 导入
 function openAdd() { $("addMask").classList.add("show"); updatePreview(); }
 function closeAdd() { hideImportBar(); $("addMask").classList.remove("show"); }
 
@@ -101,102 +102,131 @@ function setSavingUI(on) {
   b.disabled = on;
   b.innerHTML = on
     ? "⏳ 导入中…"
-    : '保存并启用<span style="font-weight:400;font-size:11px;opacity:.8">(未填名称时从 zip 自动识别)</span>';
+    : '保存并启用<span style="font-weight:400;font-size:11px;opacity:.8">(自动识别输入)</span>';
 }
 function toggleAdv() { advOpen = !advOpen; $("fAdv").style.display = advOpen ? "" : "none"; $("advBtn").textContent = (advOpen ? "▾" : "▸") + " 高级设置"; updatePreview(); }
-function setType(t) {
-  addType = t;
-  $("ftApp").classList.toggle("on", t === "app");
-  $("ftLink").classList.toggle("on", t === "link");
-  $("ftGit").classList.toggle("on", t === "git");
-  $("fAppRows").style.display = t === "app" ? "" : "none";
-  $("fLinkRows").style.display = t === "link" ? "" : "none";
-  $("fGitRows").style.display = t === "git" ? "" : "none";
-  $("fAdvApp").style.display = t === "app" ? "" : "none";
+
+/* ---- 智能识别(v0.11.10):单输入自动判断类型 ---- */
+const GIT_URL_RE = /github\.com|github\.cn|gitlab|gitee|gitcode|bitbucket|codeberg|sourceforge|\.git(\/|$)/i;
+function detectInputType(text) {
+  const t = (text || "").trim();
+  if (!t) return { mode: "app", hint: "留空地址:命名创建空白模板,或拖入 zip 自动创建" };
+  if (/^https?:\/\//i.test(t)) {
+    if (/\.zip($|\?)/i.test(t)) return { mode: "zip", hint: "将下载 zip 并从 tool.json 自动创建/更新" };
+    if (GIT_URL_RE.test(t)) return { mode: "git", hint: "将克隆仓库并自动托管运行" };
+    return { mode: "link", hint: "将创建跳转卡片(不托管进程)" };
+  }
+  return { mode: "app", hint: "将创建空白模板(可拖入 zip 覆盖代码)" };
+}
+const DETECT_LABEL = { git: "Git 导入", zip: "zip 链接", link: "外部跳转", app: "托管进程" };
+
+function renderDetect() {
+  const d = $("fDetect"), branchRow = $("fGitBranchRow");
+  if (!d) return;
+  const det = detectInputType($("fInput").value);
+  d.className = "detect d-" + det.mode;
+  d.innerHTML = `<span class="d-tag">${DETECT_LABEL[det.mode]}</span>${det.hint}`;
+  d.style.display = "";
+  if (branchRow) branchRow.style.display = det.mode === "git" ? "" : "none";
   updatePreview();
 }
+
 function collectSpec() {
-  if (addType === "git") return { git: true, name: ($("fName").value || "").trim(), url: ($("fGitUrl").value || "").trim(), branch: ($("fGitBranch").value || "").trim(), id: $("fId").value.trim() };
-  const s = { name: ($("fName").value || "").trim(), type: addType };
-  if (addType === "link") s.url = ($("fUrl").value || "").trim();
+  const det = detectInputType($("fInput").value);
+  const mode = det.mode;
+  const s = { name: ($("fName").value || "").trim(), mode };
+  if (mode === "zip" || mode === "git" || mode === "link") s.url = ($("fInput").value || "").trim();
+  if (mode === "git") s.branch = ($("fGitBranch").value || "").trim();
   const a = { id: $("fId").value.trim(), desc: $("fDesc").value.trim(), group: $("fGroup").value.trim(), icon: $("fIcon").value.trim(), cmd: $("fCmd").value.trim(), port: $("fPort").value.trim(), health: $("fHealth").value.trim() };
   if (a.id) s.id = a.id;
   if (a.desc) s.desc = a.desc;
   if (a.group && a.group !== "工具") s.group = a.group;
   if (a.icon && a.icon !== "🔧") s.icon = a.icon;
-  if (addType === "app") { if (a.cmd) { try { const c = JSON.parse(a.cmd); if (Array.isArray(c)) s.cmd = c; } catch {} } if (a.port) s.port = parseInt(a.port, 10); if (a.health) s.health = a.health; }
+  if (mode === "app") { if (a.cmd) { try { const c = JSON.parse(a.cmd); if (Array.isArray(c)) s.cmd = c; } catch {} } if (a.port) s.port = parseInt(a.port, 10); if (a.health) s.health = a.health; }
   return s;
 }
-function updatePreview() { const s = collectSpec(); $("fPreview").textContent = s.git ? `Git 导入: ${s.url || "(未填)"}` : JSON.stringify(s, null, 2); }
-["fName", "fUrl", "fId", "fDesc", "fGroup", "fIcon", "fCmd", "fPort", "fHealth", "fGitUrl", "fGitBranch"].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener("input", updatePreview); });
+
+function updatePreview() {
+  const s = collectSpec();
+  if (s.mode === "git") $("fPreview").textContent = `Git 导入: ${s.url || "(未填)"}${s.branch ? " @ " + s.branch : ""}`;
+  else if (s.mode === "zip") $("fPreview").textContent = `zip 链接导入: ${s.url || "(未填)"}`;
+  else if (s.mode === "link") $("fPreview").textContent = `外部跳转: ${s.url || "(未填)"} → ${s.name || "未命名"}`;
+  else $("fPreview").textContent = JSON.stringify(s, null, 2);
+}
+["fName", "fInput", "fGitBranch", "fId", "fDesc", "fGroup", "fIcon", "fCmd", "fPort", "fHealth"].forEach(id => {
+  const el = document.getElementById(id); if (!el) return;
+  el.addEventListener("input", () => { if (id === "fInput") renderDetect(); else updatePreview(); });
+});
 
 let selZip = null;
 function pickZip() { $("fZipInput").value = ""; $("fZipInput").click(); }
 function handleDrop(files) { if (files.length) { selZip = files[0]; $("fZipInfo").textContent = selZip.name + " (" + Math.round(selZip.size / 1024) + " KB)"; } }
 $("fZipInput").addEventListener("change", () => { const f = $("fZipInput").files[0]; if (f) { selZip = f; $("fZipInfo").textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)"; } });
 
+function resetAddForm() {
+  ["fName", "fInput", "fGitBranch", "fId", "fDesc", "fCmd", "fPort", "fHealth"].forEach(x => { const el = document.getElementById(x); if (el) el.value = ""; });
+  const g = $("fGroup"); if (g) g.value = "工具";
+  const ic = $("fIcon"); if (ic) ic.value = "🔧";
+  selZip = null; $("fZipInfo").textContent = "未选择";
+  const d = $("fDetect"); if (d) d.style.display = "none";
+  const br = $("fGitBranchRow"); if (br) br.style.display = "none";
+}
+
 let adding = false; // 防重复提交锁(连点会创建多个副本)
 async function saveAdd() {
   if (adding) return; // 提交中,忽略重复点击
   const spec = collectSpec();
-  // 零输入模式(2026-08-06):未填名称但选了 zip(app 型)→ 纯 zip 上传,后端从 zip 内 tool.json 自动创建/更新
-  if (!spec.name && addType === "app" && selZip) {
+  const mode = spec.mode;
+  // ① 拖了 zip → app zip 上传(优先级最高)
+  if (selZip) {
     adding = true;
     try {
       const j = await apiUploadZipAuto(selZip);
       closeAdd();
-      ["fName", "fUrl", "fId", "fDesc", "fGroup", "fIcon", "fCmd", "fPort", "fHealth", "fGitUrl", "fGitBranch"].forEach(x => { const el = document.getElementById(x); if (el) el.value = ""; });
-      selZip = null; $("fZipInfo").textContent = "未选择";
+      resetAddForm();
       toast(j.created ? "已从 zip 自动创建" : "已用 zip 覆盖更新");
       load();
     } catch (e) { toast(e.message); }
     finally { adding = false; }
     return;
   }
-  // 链接零输入(2026-08-06 v0.11.4+):git 模式(仓库或 .zip 链接)未填名称 → 后端从 URL/tool.json 自动推导 id 与名称,无需强制填写
-  const isGitNoName = spec.git && !spec.name;
-  if (!spec.name && !isGitNoName) { toast("请填写名称,或直接拖入带 tool.json 的 zip / 填 Git 地址或 .zip 链接"); return; }
+  // ② import 模块关闭时禁止 zip/git 导入
+  if ((mode === "zip" || mode === "git") && __importDisabled) { toast("在线导入已关闭(设置 → 功能开关 → import)"); return; }
+  // ③ 在线导入(zip 链接 / git 仓库),异步任务 + 进度条,名称可留空
+  if (mode === "zip" || mode === "git") {
+    if (!/^https?:\/\//.test(spec.url || "")) { toast("Git 仓库 / zip 链接需 http(s) 地址"); return; }
+    if (mode === "zip" && !/\.zip($|\?)/i.test(spec.url)) { toast("zip 链接需以 .zip 结尾"); return; }
+    setSavingUI(true);
+    showImportBar();
+    onImportProgress = setImportProgress;
+    try {
+      const j = await apiImport(spec.url, spec.branch, spec.id);
+      const created = j.created !== false;
+      closeAdd();
+      resetAddForm();
+      toast(created ? "已从链接自动创建" : "已用链接覆盖更新");
+      load();
+    } finally { onImportProgress = null; hideImportBar(); setSavingUI(false); }
+    return;
+  }
+  // ④ 本地创建(app 空白模板 / link 跳转卡片)
+  if (mode === "link" && !/^https?:\/\//.test(spec.url || "")) { toast("外部跳转需 http(s) 地址"); return; }
+  if (mode === "app" && !spec.name) { toast("请填写名称,或输入 URL / 拖入 zip"); return; }
   adding = true;
   try {
-    let j;
-    if (spec.git) {
-      if (!/^https?:\/\//.test(spec.url || "")) { toast("Git 仓库 / zip 链接需 http(s) 地址"); return; }
-      setSavingUI(true); // 按钮禁用 + 文案,防连点
-      showImportBar();   // 进度条:下载中 → 解压创建 → 启动
-      onImportProgress = setImportProgress;
-      try {
-        j = await apiImport(spec.url, spec.branch, spec.id);
-        const created = j.created !== false;
-        closeAdd();
-        ["fName", "fUrl", "fId", "fDesc", "fGroup", "fIcon", "fCmd", "fPort", "fHealth", "fGitUrl", "fGitBranch"].forEach(x => { const el = document.getElementById(x); if (el) el.value = ""; });
-        selZip = null; $("fZipInfo").textContent = "未选择";
-        toast(isGitNoName ? (created ? "已从链接自动创建" : "已用链接覆盖更新") : "已导入");
-        load();
-      } finally {
-        onImportProgress = null;
-        hideImportBar();
-        setSavingUI(false);
-      }
-      return;
-    } else {
-      if (spec.type === "link" && !/^https?:\/\//.test(spec.url || "")) { toast("link 型需 http(s) 地址"); return; }
-      j = await apiCreate(spec);
-    }
-    const id = j.tool && j.tool.id;
-    if (spec.type === "app" && id && selZip) await apiUploadZip(id, selZip);
+    const j = mode === "link" ? await apiCreate({ name: spec.name, type: "link", url: spec.url }) : await apiCreate(spec);
     closeAdd();
-    ["fName", "fUrl", "fId", "fDesc", "fGroup", "fIcon", "fCmd", "fPort", "fHealth", "fGitUrl", "fGitBranch"].forEach(x => { const el = document.getElementById(x); if (el) el.value = ""; });
-    selZip = null; $("fZipInfo").textContent = "未选择";
+    resetAddForm();
     toast("已创建"); load();
   } catch (e) { toast(e.message); }
-  finally { adding = false; } // 无论成败都解锁(下次可再添加)
+  finally { adding = false; }
 }
 
 // manifest 在线校验(不写盘):POST 内容 → 显示错误/归一化结果
 async function validateManifestUI() {
   const v = ($("fCmd").value || "").trim();
   let spec = collectSpec();
-  if (spec.git) { toast("Git 模式无需校验"); return; }
+  if (spec.mode === "git" || spec.mode === "zip") { toast("Git/zip 导入无需校验"); return; }
   if (v && !spec.cmd) { try { spec.cmd = JSON.parse(v); } catch { toast("启动命令需 JSON 数组,如 [\"node\",\"server.mjs\"]"); return; } }
   const show = document.getElementById("fValidateResult");
   try {
@@ -391,9 +421,9 @@ async function loadSettings() {
     hide("btnBackup", m.backup === false);
     hide("btnPass", m.auth === false);
     hide("capStatus", m.capabilities === false);
-    // import 关闭:「+ 添加」隐藏 Git 导入选项与 zip 拖拽(仅保留名称创建)
+    // import 关闭:隐藏 zip 拖拽 + 禁止在线导入识别(v0.11.10 统一入口)
     if (m.import === false) {
-      const ft = document.getElementById("ftGit"); if (ft) ft.style.display = "none";
+      __importDisabled = true;
       const drop = document.getElementById("dropZone"); if (drop) drop.style.display = "none";
     }
   } catch { /* 设置读取失败不影响主界面 */ }

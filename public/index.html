@@ -144,6 +144,12 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .btn.sm{font-size:11px;padding:5px 12px}
 .tip{font-size:11px;color:var(--text2);background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);padding:8px 10px;margin-bottom:10px;line-height:1.6}
+.detect{font-size:11px;padding:6px 10px;border-radius:var(--r2);margin-bottom:10px;line-height:1.6;background:var(--surface);border:1px solid var(--line)}
+.detect .d-tag{font-size:10px;padding:1px 7px;border-radius:9px;margin-right:6px;font-weight:500}
+.detect.d-git{border-color:var(--ok)44}.detect.d-git .d-tag{color:var(--ok);border:1px solid var(--ok)44;background:var(--ok)10}
+.detect.d-zip{border-color:#85B7EB55}.detect.d-zip .d-tag{color:#85B7EB;border:1px solid #85B7EB55;background:#185FA520}
+.detect.d-link{border-color:var(--line2)}.detect.d-link .d-tag{color:var(--text2);border:1px solid var(--line2);background:var(--bg)}
+.detect.d-app{border-color:var(--warn)44}.detect.d-app .d-tag{color:var(--warn);border:1px solid var(--warn)44;background:var(--warn)10}
 .preview{background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--text2);white-space:pre-wrap;max-height:100px;overflow:auto}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);color:var(--text);padding:10px 22px;border-radius:24px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:110;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 .toast.show{opacity:1}
@@ -187,21 +193,12 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
   <div class="modal">
     <h2>添加工具</h2>
     <div class="ftype">
-      <button id="ftApp" class="on" onclick="setType('app')">托管进程</button>
-      <button id="ftLink" onclick="setType('link')">外部跳转</button>
-      <button id="ftGit" onclick="setType('git')">Git 导入</button>
-    </div>
-    <div class="frow"><label>名称</label><input class="finput" id="fName" placeholder="我的工具(拖 zip / 填 zip 链接时可留空)"></div>
-    <div id="fLinkRows" style="display:none">
-      <div class="frow"><label>目标地址</label><input class="finput" id="fUrl" placeholder="http://..."></div>
-    </div>
-    <div id="fGitRows" style="display:none">
-      <div class="tip">从 Git 仓库导入：自动识别 manifest.json/tool.json（根目录或一级子目录），克隆后立即托管运行。<b style="color:var(--brand)">也可填 Release 的 .zip 链接</b>（自动下载创建）。</div>
-      <div class="frow"><label>仓库/链接</label><input class="finput" id="fGitUrl" placeholder="https://github.com/user/repo.git 或 https://.../release.zip"></div>
-      <div class="frow"><label>分支（可选）</label><input class="finput" id="fGitBranch" placeholder="main / 留空默认"></div>
-    </div>
+    <div class="frow"><label>名称</label><input class="finput" id="fName" placeholder="我的工具(可选,识别失败时使用)"></div>
+    <div class="frow"><label>地址</label><input class="finput" id="fInput" placeholder="粘贴 Git 仓库 / zip 链接 / 网页地址;或拖入 zip,留空直接命名"></div>
+    <div id="fDetect" class="detect" style="display:none"></div>
+    <div id="fGitBranchRow" class="frow" style="display:none"><label>分支(可选)</label><input class="finput" id="fGitBranch" placeholder="main / 留空默认"></div>
     <div id="fAppRows">
-      <div class="tip">自动分配端口并生成示例。<b style="color:var(--brand)">可选 zip 自动解压</b></div>
+      <div class="tip">留空地址时:命名创建空白模板,或<b style="color:var(--brand)">拖入带 tool.json 的 zip</b> 自动创建。</div>
       <div class="frow"><label>代码 zip</label>
         <div class="drop-zone" id="dropZone"
           ondragover="event.preventDefault();this.style.borderColor='var(--brand)'"
@@ -230,7 +227,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="frow" style="align-items:flex-start"><label></label><button class="btn" onclick="validateManifestUI()" style="width:auto">✓ 校验配置</button><div id="fValidateResult" style="display:none;margin-left:8px;font-size:12px;padding-top:7px"></div></div>
     <div class="acts">
       <button class="btn" onclick="closeAdd()">取消</button>
-      <button class="btn primary" id="saveBtn" onclick="saveAdd()">保存并启用<span style="font-weight:400;font-size:11px;opacity:.8">(未填名称时从 zip 自动识别)</span></button>
+      <button class="btn primary" id="saveBtn" onclick="saveAdd()">保存并启用<span style="font-weight:400;font-size:11px;opacity:.8">(自动识别输入)</span></button>
     </div>
   </div>
 </div>
