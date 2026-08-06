@@ -68,11 +68,23 @@ async function apiCreate(spec) {
   return j;
 }
 
+/** 已设置管理员密码时,返回用户输入的密码(否则返回空串)。用于 import / 上传等写操作(2026-08-06 安全加固) */
+async function adminPassFor() {
+  try {
+    const st = await (await fetch("/api/admin/pass", { cache: "no-store" })).json();
+    if (!st.set) return "";
+  } catch { return ""; }
+  const p = window.prompt("此操作需要管理员密码:");
+  if (p === null) throw new Error("已取消(需要管理员密码)");
+  return p.trim();
+}
+
 /** Git 导入工具 */
 /** 导入工具(Git 仓库或 .zip 链接)。v0.11.4 起后端异步任务化:立即返回 taskId,轮询进度,完成返回 {ok,created,tool} */
 let onImportProgress = null; // 进度回调(status/message/progress),由 UI 层设置
 async function apiImport(url, branch, id, confirm) {
-  const j = await postJSON("/api/tools/import", { url, branch: branch || undefined, id: id || undefined, ...(confirm ? { confirm: true } : {}) });
+  const pass = await adminPassFor();
+  const j = await postJSON("/api/tools/import", { url, branch: branch || undefined, id: id || undefined, ...(pass ? { pass } : {}), ...(confirm ? { confirm: true } : {}) });
   if (!j.ok) throw new Error(j.error);
   if (!j.taskId) return j; // 兼容同步返回
   if (onImportProgress) onImportProgress({ status: "queued", message: "任务已创建", progress: 0 });
@@ -104,6 +116,8 @@ async function apiUploadZipAuto(zip, confirm) {
   const fd = new FormData();
   fd.append("file", zip, zip.name);
   if (confirm) fd.append("confirm", "1");
+  const pass = await adminPassFor();
+  if (pass) fd.append("pass", pass);
   const j = await (await fetch("/api/files", { method: "POST", body: fd })).json();
   if (!j.ok && !j.needConfirm) throw new Error(j.error); // needConfirm(版本回退)由调用方弹确认
   return j;

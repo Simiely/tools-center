@@ -2,6 +2,20 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.12.4 (2026-08-06) · 二轮审计加固(import/files 密码门 + git/logger/zip 清理)
+
+### 安全
+- **import + /api/files 密码门**(2026-08-06 二轮审计:两接口此前免鉴权,导入即拉起进程/可写 tools、data 路径 = RCE 面):设置密码后必须携带有效密码(`body.pass` 或 `X-Admin-Pass`),否则 403;未设置密码仍开放(内网单用户默认)。前端 `apiImport`/`apiUploadZipAuto` 设密后自动弹密码框随请求发送。实测:未设密放行 → 设密后无 pass 403、带 pass 放行
+- `auth.js` 新增 `passOk(body, headers)` 统一校验入口
+
+### 加固
+- **git.js 临时目录 finally 清理**:克隆/识别/落位所有退出路径(含"未找到 manifest""目录冲突"抛错)统一清理 `.import-*`,不再残留 tools/
+- **logger.js 写流安全**:detachLog 已 end 的流被子进程残留输出写入时静默(防 ERR_STREAM_WRITE_AFTER_END 崩进程)
+- **zip.js zip 炸弹防护**:条目数 >10000 或解压总体积 >200MB 直接拒绝
+
+### 验证
+- 76/76 测试全过;import 密码门三态(未设密/设密无pass 403/带pass 放行)与 /api/files 密码门、CORS 跨源拦截均本地实测
+
 ## v0.12.3 (2026-08-06) · 全量代码审计修复(高危 RCE + 路径穿越 + 前端健壮性)
 
 ### 安全(高危)
