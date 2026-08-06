@@ -130,13 +130,22 @@ async function saveAdd() {
     finally { adding = false; }
     return;
   }
-  if (!spec.name) { toast("请填写名称,或直接拖入带 tool.json 的 zip"); return; }
+  // 链接零输入(2026-08-06 v0.11.4+):git 模式(仓库或 .zip 链接)未填名称 → 后端从 URL/tool.json 自动推导 id 与名称,无需强制填写
+  const isGitNoName = spec.git && !spec.name;
+  if (!spec.name && !isGitNoName) { toast("请填写名称,或直接拖入带 tool.json 的 zip / 填 Git 地址或 .zip 链接"); return; }
   adding = true;
   try {
     let j;
     if (spec.git) {
-      if (!/^https?:\/\//.test(spec.url || "")) { toast("Git 仓库需 http(s) 地址"); return; }
+      if (!/^https?:\/\//.test(spec.url || "")) { toast("Git 仓库 / zip 链接需 http(s) 地址"); return; }
       j = await apiImport(spec.url, spec.branch, spec.id);
+      const created = j.created !== false;
+      closeAdd();
+      ["fName", "fUrl", "fId", "fDesc", "fGroup", "fIcon", "fCmd", "fPort", "fHealth", "fGitUrl", "fGitBranch"].forEach(x => { const el = document.getElementById(x); if (el) el.value = ""; });
+      selZip = null; $("fZipInfo").textContent = "未选择";
+      toast(isGitNoName ? (created ? "已从链接自动创建" : "已用链接覆盖更新") : "已导入");
+      load();
+      return;
     } else {
       if (spec.type === "link" && !/^https?:\/\//.test(spec.url || "")) { toast("link 型需 http(s) 地址"); return; }
       j = await apiCreate(spec);

@@ -7,6 +7,7 @@
 - `POST /api/tools/import`:`url` 以 `.zip` 结尾 → 自动走链接导入:下载 → 解压 → 从 `tool.json` 自动创建/更新工具(与拖 zip 上传同链路),同一 id 再导=覆盖升级
 - 下载支持 `HTTPS_PROXY`/`HTTP_PROXY` 环境变量(CONNECT 隧道 + TLS);兼容代理把响应包成 multipart 的解包
 - 前端「Git 导入」提示改:"仓库地址 **或 Release 的 .zip 链接**"
+- **名称放宽**:Git 模式(仓库或 .zip 链接)名称可留空——后端本就从 URL/tool.json 推导 id 与名称,不再强制前端填写;保存按钮/名称框标注"可留空从 zip 自动识别"
 - 场景:工具 Release 附平台版 zip 资产 → 粘贴资产链接即自动托管,零输入
 
 ## v0.11.3 (2026-08-06) · 零输入 zip 上传(纯 zip 自动创建工具)

@@ -182,7 +182,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
       <button id="ftLink" onclick="setType('link')">外部跳转</button>
       <button id="ftGit" onclick="setType('git')">Git 导入</button>
     </div>
-    <div class="frow"><label>名称</label><input class="finput" id="fName" placeholder="我的工具"></div>
+    <div class="frow"><label>名称</label><input class="finput" id="fName" placeholder="我的工具(拖 zip / 填 zip 链接时可留空)"></div>
     <div id="fLinkRows" style="display:none">
       <div class="frow"><label>目标地址</label><input class="finput" id="fUrl" placeholder="http://..."></div>
     </div>
@@ -221,7 +221,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="frow" style="align-items:flex-start"><label></label><button class="btn" onclick="validateManifestUI()" style="width:auto">✓ 校验配置</button><div id="fValidateResult" style="display:none;margin-left:8px;font-size:12px;padding-top:7px"></div></div>
     <div class="acts">
       <button class="btn" onclick="closeAdd()">取消</button>
-      <button class="btn primary" onclick="saveAdd()">保存并启用</button>
+      <button class="btn primary" onclick="saveAdd()">保存并启用<span style="font-weight:400;font-size:11px;opacity:.8">(未填名称时从 zip 自动识别)</span></button>
     </div>
   </div>
 </div>
