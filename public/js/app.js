@@ -470,7 +470,30 @@ async function saveSettings() {
 
 /* ---------- 初始化 ---------- */
 // 密码可选:初次登录不强制设置(不再自动弹窗),用户想用密码时点顶栏「密码」设置
-document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeToolBackup(); closeSettings(); } });
+
+/* ---- 存储管理大弹窗(2026-08-06:独立页 /disk.html 改回弹窗,复用 disk-page.js) ---- */
+function openDisk() { $("diskMask").classList.add("show"); diskRefresh(); }
+function closeDisk() { $("diskMask").classList.remove("show"); }
+
+/* ---- 点击弹窗空白处(遮罩层本体)关闭(2026-08-06) ---- */
+const MASK_CLOSERS = {
+  addMask: closeAdd,
+  detMask: closeDet,
+  capMask: closeCap,
+  cfmMask: () => closeCfm(false), // 密码确认框:点空白 = 取消
+  passMask: closePass,
+  tbMask: closeToolBackup,
+  settingsMask: closeSettings,
+  diskMask: closeDisk,
+};
+document.addEventListener("click", (e) => {
+  const mask = e.target.closest ? e.target.closest(".mask") : null;
+  if (!mask || e.target !== mask) return; // 仅点击遮罩空白处才关闭,点弹窗内容不关
+  const closer = MASK_CLOSERS[mask.id];
+  if (closer) closer();
+});
+
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeCap(); closeToolBackup(); closeSettings(); closeDisk(); } });
 // 全局错误兜底(2026-08-06):任何 JS 错误/请求异常都 toast 提示,避免"点按钮无反应"难排查
 window.addEventListener("error", (e) => { try { toast("脚本错误: " + ((e && (e.message || (e.error && e.error.message))) || "未知")); } catch {} });
 window.addEventListener("unhandledrejection", (e) => { try { toast("请求异常: " + ((e && e.reason && (e.reason.message || e.reason)) || "未知")); } catch {} });
