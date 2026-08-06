@@ -5,10 +5,13 @@ let tools = [], activeCat = "all", activeCap = "";
 function renderTabs() {
   const cats = [...new Set(tools.map(t => t.group || "工具"))];
   const caps = [...new Set(tools.flatMap(t => t.capabilities || []))];
+  // 单分类自动隐藏分类 tab(2026-08-06):所有工具同属一个分类时只留「全部」,避免"全部+唯一分类"冗余;≥2 个分类才显示
+  const showCats = cats.filter(c => c !== "全部").length > 1;
+  if (!showCats && activeCat !== "all") { activeCat = "all"; renderCards(); }
   $("tabs").querySelector(".tabs-inner").innerHTML =
     `<button class="tab ${activeCat === "all" && !activeCap ? "on" : ""}" data-cat="all" data-cap="" onclick="setCat('all','')">全部</button>` +
     caps.map(c => `<button class="tab ${activeCap === c ? "on" : ""}" data-cap="${esc(c)}" onclick="setCat('', this.dataset.cap)">${esc(capLabel(c))}</button>`).join("") +
-    cats.filter(c => c !== "全部").map(c => `<button class="tab ${activeCat === c ? "on" : ""}" data-cat="${esc(c)}" onclick="setCat(this.dataset.cat,'')">${esc(c)}</button>`).join("");
+    (showCats ? cats.filter(c => c !== "全部").map(c => `<button class="tab ${activeCat === c ? "on" : ""}" data-cat="${esc(c)}" onclick="setCat(this.dataset.cat,'')">${esc(c)}</button>`).join("") : "");
 }
 
 function setCat(c, cap) { activeCat = c; activeCap = cap; renderTabs(); renderCards(); }
