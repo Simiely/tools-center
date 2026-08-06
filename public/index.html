@@ -215,7 +215,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="logo"><div class="logo-icon">TC</div><div class="logo-text">Tools Center<span id="meta"> 加载中</span></div></div>
     <div class="hdr-acts">
       <span class="hdr-stat" id="stat">—</span>
-      <button class="sm btn" id="btnRefresh" onclick="btnSpin('btnRefresh', load)">刷新</button>
+      <button class="sm btn" id="btnRefresh" onclick="btnSpin('btnRefresh', load, '正在刷新工具列表…', '已刷新')">刷新</button>
       <span class="cap-pill" id="capStatus" onclick="openCapDetail()" title="点击查看能力状态"></span>
       <button class="sm btn" id="btnBackup" onclick="openToolBackup()" title="备份/恢复工具">备份</button>
       <button class="sm btn" id="btnDisk" onclick="openDisk()" title="存储管理(程序/数据分列,大弹窗)">存储</button>
@@ -298,7 +298,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="det-row"><span class="k">端口</span><span class="v" id="detPort">—</span></div>
     <div class="det-row"><span class="k">能力</span><span class="v"><span class="caps" id="detCaps" style="justify-content:flex-start"></span></span></div>
     <div class="det-row"><span class="k">错误</span><span class="v" id="detErr" style="color:var(--bad)">—</span></div>
-    <div class="det-row"><span class="k">日志</span><span class="v"><button class="btn sm" id="btnLogRefresh" onclick="btnSpin('btnLogRefresh', loadLog)">刷新日志</button></span></div>
+    <div class="det-row"><span class="k">日志</span><span class="v"><button class="btn sm" id="btnLogRefresh" onclick="btnSpin('btnLogRefresh', loadLog, '正在刷新日志…')">刷新日志</button></span></div>
     <div class="log-box" id="detLog"><span class="log-empty">加载中…</span></div>
     <div class="det-acts">
       <button class="btn sm" id="detOpen" onclick="openToolDetail()">打开</button>
@@ -353,7 +353,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="tip">备份所有工具(代码+数据)为 zip;删除工具前建议先备份,误删后可恢复。</div>
     <div class="tb-actions" style="display:flex;gap:8px;margin:10px 0">
       <button class="btn primary" onclick="tbCreate()" id="tbCreateBtn">立即备份</button>
-      <button class="btn" id="btnTbRefresh" onclick="btnSpin('btnTbRefresh', tbRefresh)">刷新列表</button>
+      <button class="btn" id="btnTbRefresh" onclick="btnSpin('btnTbRefresh', tbRefresh, '正在刷新备份列表…')">刷新列表</button>
     </div>
     <div id="tbList" style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px">
       <div class="tip" style="text-align:center;padding:20px">加载中…</div>
@@ -388,7 +388,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
       <span>🗂️ 存储管理</span>
       <span style="display:flex;gap:8px">
-        <button class="btn" id="btnDiskRefresh" onclick="btnSpin('btnDiskRefresh', diskRefresh)">刷新</button>
+        <button class="btn" id="btnDiskRefresh" onclick="btnSpin('btnDiskRefresh', diskRefresh, '正在扫描存储…', '已刷新')">刷新</button>
         <button class="btn primary" onclick="openDiskBackup()">备份全部</button>
         <button class="btn" onclick="closeDisk()">✕ 关闭</button>
       </span>

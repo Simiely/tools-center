@@ -7,20 +7,24 @@ function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<"
 
 /**
  * 刷新按钮通用交互(2026-08-06):点击后按钮加 spinning(尾部旋转图标 + 禁用防连点),
- * 请求完成后自动恢复。所有「刷新」类按钮统一走这里。
+ * 并 toast 弹出动作说明;请求完成后自动恢复。所有「刷新」类按钮统一走这里。
  * @param {string} btnId 按钮 id(需在 HTML 中给按钮加 id)
  * @param {Function} fn 刷新函数(async,完成后恢复按钮)
+ * @param {string} [startMsg] 点击时弹出的动作说明,默认「正在刷新…」
+ * @param {string} [doneMsg] 完成后的提示,留空则不提示
  */
-async function btnSpin(btnId, fn) {
+async function btnSpin(btnId, fn, startMsg = "正在刷新…", doneMsg = "") {
   const btn = $(btnId);
   if (!btn || btn.disabled) return; // 防连点:进行中忽略再次点击
   btn.disabled = true;
   btn.classList.add("spinning");
+  if (startMsg) toast(startMsg);
   try { await fn(); }
   catch { /* 刷新函数内部已容错;仅保证按钮恢复 */ }
   finally {
     btn.disabled = false;
     btn.classList.remove("spinning");
+    if (doneMsg) toast(doneMsg);
   }
 }
 
