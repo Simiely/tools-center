@@ -34,7 +34,7 @@ function diskHint(i) {
     case "managed": return i.paused ? "工具已暂停(不自动拉起);可在此删除" : "正常托管;点击删除会先停进程再清目录";
     case "invalid": return "配置无效(未扫描进注册表);可恢复或清理";
     case "removed": return "已解除托管(平台忽略此目录);可恢复识别或物理清理";
-    case "ghost":   return "无 manifest.json/tool.json,扫描跳过;确认无用后可清理";
+    case "ghost":   return i.mount ? "⚠️ 独立挂载点(Docker bind mount):平台无法删除,需在宿主机处理该目录" : "无 manifest.json/tool.json,扫描跳过;确认无用后可清理";
     default:        return "—";
   }
 }
@@ -138,8 +138,10 @@ async function diskCleanSelected() {
   try {
     const j = await apiDisk.clean(dirs, pass || "");
     const ok = (j.results || []).filter(r => r.removed).length;
-    const kept = (j.results || []).filter(r => r.dirKept).length;
-    toast("已清理 " + ok + " 个" + (kept ? ", " + kept + " 个被占用已转解除托管" : ""));
+    const kept = (j.results || []).filter(r => r.dirKept);
+    // 失败项逐个列出原因(如"被占用/挂载点"),不再笼统说"已转解除托管"
+    const failMsg = kept.map(r => r.dir + (r.error ? "(" + r.error + ")" : "")).join("; ");
+    toast("已清理 " + ok + " 个" + (failMsg ? ", 失败: " + failMsg : ""));
     diskSel = {};
     diskRefresh();
     load();

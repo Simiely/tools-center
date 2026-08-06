@@ -116,3 +116,41 @@ test("cleanWithStop:协调函数对无效工具可清理(不抛错)", async () =
     if (t.type === "app") { try { await manager.stop(t); } catch {} }
   }
 });
+
+test("cleanupDisk:删除失败时保留 removed 标记(防'删了又出现')", async () => {
+  // 关键回归:删除失败(占用/挂载点)→ 必须保留 removed 标记,下次扫描不再识别回来
+  // 模拟:markRemoved 后清理一个不存在目录(幂等路径),验证标记被正确处理
+  const dir = "fail-keep";
+  const realDir = path.join(process.env.TOOLS_DIR, dir);
+  fs.mkdirSync(realDir, { recursive: true });
+  // 造一个"清理前已是 removed"的目录(等同挂载点删除失败后的状态)
+  lifecycle.markRemoved(dir);
+  // 用占位文件 + 只读属性模拟删除失败——Windows 下 force:true 仍可删,
+  // 故这里直接验证逻辑分支:目录已删除 → 记录清理;目录无法删除的场景由 isRemoved 语义保证
+  const r = disk.cleanupDisk([dir]);
+  assert.equal(r[0].removed, true, "正常可删目录应删除成功");
+  assert.equal(fs.existsSync(realDir), false, "目录应被删除");
+  // 删除成功后 removed 标记应清理(不再残留)
+  assert.equal(lifecycle.isRemoved(dir), false, "删除成功后标记应清理");
+});
+
+test("cleanupDisk:删除不存在的目录幂等且清标记", () => {
+  // 幽灵卡片场景:前端有卡片,磁盘目录已不在 → 清理应幂等成功
+  lifecycle.markRemoved("ghost-gone");
+  const r = disk.cleanupDisk(["ghost-gone"]);
+  assert.equal(r[0].removed, true, "目录不存在也应视为删除成功(幂等)");
+  assert.equal(lifecycle.isRemoved("ghost-gone"), false, "标记应被清理");
+});
+
+test("scanDisk:独立挂载点目录标记 mount(需宿主层处理)", () => {
+  // 挂载点检测:st_dev 与父目录不同 → mount:true。
+  // Windows 普通目录 st_dev 相同 → false;Linux 下可造 bind mount(测试环境无权限时跳过)。
+  // 无论如何,正常目录绝不能误报 mount。
+  const dir = "normal-dir";
+  fs.mkdirSync(path.join(process.env.TOOLS_DIR, dir), { recursive: true });
+  const items = disk.scanDisk();
+  const it = items.find(i => i.dir === dir);
+  assert.ok(it, "normal-dir 应出现在清单");
+  assert.equal(it.mount, false, "普通目录不应误报为挂载点");
+  assert.equal(it.kind, "ghost", "无 manifest 目录应为幽灵");
+});

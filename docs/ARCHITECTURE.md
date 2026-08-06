@@ -133,7 +133,7 @@ HTML 响应注入 __BASE__ = /tool/<id>(子路径挂载)
 | `manager.js` | 167 | 进程托管：spawn/退避重启/优雅停止/健康检查 + 暂停联动 | config, registry, logger |
 | `proxy.js` | 111 | 反向代理 + link 302 + WebSocket 升级 + __BASE__ 注入 | config, registry |
 | `logger.js` | 85 | 工具日志：文件滚动 + 内存环形缓冲 + detachLog 释放 | config |
-| `disk-ops.js` | 90 | 存储管理：磁盘扫描分类/物理清理/恢复托管/先停进程再删 | config, registry, lifecycle, manager |
+| `disk-ops.js` | 105 | 存储管理：磁盘扫描分类(含挂载点识别)/物理清理(失败保留标记+错误透传)/恢复托管/先停进程再删 | config, registry, lifecycle, manager |
 | `backup.js` | 144 | 本地备份/恢复 + WebDAV 上传下载 | registry, webdav |
 | `webdav.js` | 66 | WebDAV 协议客户端（MKCOL/PUT/GET） | config |
 | `capability.js` | 52 | 能力装配器：env 注入 / 校验 / ensure 触发 | capabilities |
