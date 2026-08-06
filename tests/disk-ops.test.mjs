@@ -271,3 +271,30 @@ test("zipToTool:覆盖升级保留数据文件(程序替换,数据放回)", asyn
   const after = dataClassify.classifyDirFiles(oldDir, ["*.db*", "wb-*.json"]);
   assert.ok(after.data.some(f => f.rel === "credits.db"), "升级后数据仍被识别");
 });
+
+test("zipToTool:被 removed 标记(解除托管)的工具可重新导入恢复(修复:restoreTool 清标记)", async () => {
+  // 背景:删除工具失败时只 markRemoved(目录保留);此后同 id 再导入 zip,若不清 removed 标记,
+  // scanTools 跳过 → getTool 返回 null → 报"工具配置无效: 未知",同一工具永远无法重新导入。
+  const dir = path.join(process.env.TOOLS_DIR, "revive-tool");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "tool.json"), JSON.stringify({
+    id: "revive-tool", name: "revive", type: "app", cmd: ["node", "server.mjs"], port: 8165,
+  }), "utf8");
+  fs.writeFileSync(path.join(dir, "server.mjs"), "// v1", "utf8");
+  // 1. 标记为已解除托管
+  lifecycle.markRemoved("revive-tool");
+  registry.scanTools();
+  assert.equal(registry.getTool("revive-tool"), null, "removed 标记下 scanTools 应跳过该工具");
+  // 2. 打包并 zipToTool 重新导入(修复后应自动清除 removed 标记并注册)
+  const { zipPackDir } = await import("../lib/core/zip.js");
+  const { zipToTool } = await import("../lib/routes/tools-files.js");
+  const buf = zipPackDir(dir, "toolRoot");
+  const out = await zipToTool(buf, "revive.zip");
+  assert.equal(out.body.ok, true, "removed 工具重导入应成功: " + (out.body.error || ""));
+  const t = registry.getTool("revive-tool");
+  assert.ok(t && t.valid, "导入后工具应已注册且有效");
+  assert.equal(lifecycle.isRemoved("revive-tool"), false, "导入后 removed 标记应被清除");
+  // 清理
+  lifecycle.restoreTool("revive-tool");
+});
+
