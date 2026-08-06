@@ -176,6 +176,10 @@ function resetAddForm() {
  * 覆盖升级/降级提示(2026-08-06):根据后端返回的 upgrade {from,to,direction} 区分提示。
  * direction: up=升级 / down=降级(旧版覆盖新版,警示) / same=同版本 / unknown=任一方无 version 字段
  */
+/**
+ * 覆盖升级/降级提示(2026-08-06):根据后端返回的 upgrade {from,to,direction} 区分提示。
+ * direction: up=升级 / down=降级(旧版覆盖新版,警示) / same=同版本 / unknown=任一方无 version 字段
+ */
 function upgradeToast(j, createdText, updatedText) {
   if (j.created) return createdText;
   const u = j.upgrade;
@@ -183,6 +187,13 @@ function upgradeToast(j, createdText, updatedText) {
   if (u.direction === "up") return `已升级 ${u.from || "?"} → ${u.to}`;
   if (u.direction === "down") return `⚠️ 已回退 ${u.to} → ${u.from}(旧版覆盖了新版!)`;
   return `已覆盖(同版本 ${u.to})`;
+}
+
+/** 版本回退确认(2026-08-06):降级导入前弹确认框,用户决定是否继续 */
+function confirmDowngrade(upgrade) {
+  const from = upgrade && upgrade.from ? upgrade.from : "?";
+  const to = upgrade && upgrade.to ? upgrade.to : "?";
+  return window.confirm(`⚠️ 检测到版本回退\n\n将用 ${to} 覆盖当前版本 ${from},确定继续吗?`);
 }
 
 let adding = false; // 防重复提交锁(连点会创建多个副本)
@@ -194,7 +205,12 @@ async function saveAdd() {
   if (selZip) {
     adding = true;
     try {
-      const j = await apiUploadZipAuto(selZip);
+      let j = await apiUploadZipAuto(selZip);
+      // 降级保护:后端 409 needConfirm → 弹确认,用户确认后带 confirm 重传
+      if (j.needConfirm) {
+        if (!confirmDowngrade(j.upgrade)) { toast("已取消导入"); return; }
+        j = await apiUploadZipAuto(selZip, true);
+      }
       closeAdd();
       resetAddForm();
       toast(upgradeToast(j, "已从 zip 自动创建", "已用 zip 覆盖更新"));
@@ -213,13 +229,22 @@ async function saveAdd() {
     showImportBar();
     onImportProgress = setImportProgress;
     try {
-      const j = await apiImport(spec.url, spec.branch, spec.id);
-      const created = j.created !== false;
+      let j;
+      try {
+        j = await apiImport(spec.url, spec.branch, spec.id);
+      } catch (e) {
+        // 降级保护:任务 error 带 needConfirm → 弹确认后重试(confirm:true)
+        if (e && e.needConfirm) {
+          if (!confirmDowngrade(e.upgrade)) { toast("已取消导入"); return; }
+          j = await apiImport(spec.url, spec.branch, spec.id, true);
+        } else throw e;
+      }
       closeAdd();
       resetAddForm();
       toast(upgradeToast(j, "已从链接自动创建", "已用链接覆盖更新"));
       load();
-    } finally { onImportProgress = null; hideImportBar(); setSavingUI(false); }
+    } catch (e) { toast(e.message); }
+    finally { onImportProgress = null; hideImportBar(); setSavingUI(false); }
     return;
   }
   // ④ 本地创建(app 空白模板 / link 跳转卡片)

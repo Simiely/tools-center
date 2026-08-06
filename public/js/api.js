@@ -76,8 +76,8 @@ async function apiCreate(spec) {
 /** Git 导入工具 */
 /** 导入工具(Git 仓库或 .zip 链接)。v0.11.4 起后端异步任务化:立即返回 taskId,轮询进度,完成返回 {ok,created,tool} */
 let onImportProgress = null; // 进度回调(status/message/progress),由 UI 层设置
-async function apiImport(url, branch, id) {
-  const j = await postJSON("/api/tools/import", { url, branch: branch || undefined, id: id || undefined });
+async function apiImport(url, branch, id, confirm) {
+  const j = await postJSON("/api/tools/import", { url, branch: branch || undefined, id: id || undefined, ...(confirm ? { confirm: true } : {}) });
   if (!j.ok) throw new Error(j.error);
   if (!j.taskId) return j; // 兼容同步返回
   if (onImportProgress) onImportProgress({ status: "queued", message: "任务已创建", progress: 0 });
@@ -90,7 +90,16 @@ async function apiImport(url, branch, id) {
     } catch { continue; }
     if (onImportProgress) onImportProgress(s);
     if (s.status === "done") return s.result ? { ok: true, ...s.result } : { ok: true };
-    if (s.status === "error") throw new Error(s.message || "导入失败");
+    if (s.status === "error") {
+      // 降级保护:后端返回 needConfirm(版本回退) → 抛带标记的错误,UI 弹确认后可重试(confirm:true)
+      if (s.result && s.result.needConfirm) {
+        const err = new Error(s.result.error || "版本回退需确认");
+        err.needConfirm = true;
+        err.upgrade = s.result.upgrade;
+        throw err;
+      }
+      throw new Error(s.message || "导入失败");
+    }
     if (Date.now() > deadline) throw new Error("导入超时(超过 6 分钟),请检查网络/代理后重试");
   }
 }
@@ -106,11 +115,12 @@ async function apiUploadZip(id, zip) {
 }
 
 /** 零输入上传(2026-08-06):纯 zip 不带 path,后端从 zip 内 tool.json 自动创建/更新工具 */
-async function apiUploadZipAuto(zip) {
+async function apiUploadZipAuto(zip, confirm) {
   const fd = new FormData();
   fd.append("file", zip, zip.name);
+  if (confirm) fd.append("confirm", "1");
   const j = await (await fetch("/api/files", { method: "POST", body: fd })).json();
-  if (!j.ok) throw new Error(j.error);
+  if (!j.ok && !j.needConfirm) throw new Error(j.error); // needConfirm(版本回退)由调用方弹确认
   return j;
 }
 
