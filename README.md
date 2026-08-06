@@ -58,6 +58,11 @@ docker compose up -d           # http://localhost:2626
 | 微信读书购书工作台 | app | weread-budget 服务化(本地开发中) |
 | NAS 现有服务(Jellyfin 等) | link | 一张卡片接入 |
 
+> **📌 与本平台的关联(双向标注)**:积分仪表盘([workbuddy-credits-tool](https://github.com/Simiely/workbuddy-credits-tool))是本平台的**完整接入示例**(app 型,`tool.json` 声明,端口 8123,`/api/status` 健康检查):
+> - 工具侧文档已标注平台:**`docs/tools-center部署.md`**(接入规范/目录结构/tool.json 字段对照/数据目录/升级)与 **`docs/发布规范.md`**(发包 = 平台版 zip + exe 版)
+> - 工具维护三个形态,数据经 WebDAV 互通:**平台版**(本平台托管)/ **exe 版**(Windows 单文件,采集 cookie)/ **源码版**(Edge 采集);cookie 凭证由桌面端采集后「云同步上传」,平台版「下载」即用
+> - 接入步骤示例见 [`docs/使用指南.md`](docs/使用指南.md) 目录结构节与文末"已接入示例"
+
 ## 测试
 
 ```bash
