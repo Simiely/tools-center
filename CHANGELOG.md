@@ -2,6 +2,18 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.12.1 (2026-08-06) · zip 导入兼容修复(反斜杠打包根治 + 下载内容校验)
+
+### 修复:Linux unzip 对反斜杠打包的 zip 误报"解压失败"
+- **根因(2026-08-06 数据实证 + 资料佐证)**:gh-release-center 等发布 zip 用 **反斜杠 `\` 作目录分隔符**打包(Windows 风格,违反 zip 规范 APPNOTE「条目分隔符必须为 `/`」)。Info-ZIP unzip 6.0(NAS/Debian 容器默认)检测到反斜杠时发出警告 `appears to use backslashes as path separators`,**文件全部正常解出(自动转 `/`)但退出码返回 1**;平台旧逻辑 `code===0 才成功` 把警告级 exit=1 误判为失败 → 报"解压失败 exit=1"
+- 现象闭环:同一 zip 本地 Windows 解压/上传成功(解压器宽容)、python/busybox 正常,唯独 NAS Docker 失败;解压后重新打包(7-Zip 生成正斜杠)即成功;workbuddy-credits-tool 平台版(v1.4.42)一直正斜杠所以从未出问题
+- **修复**:`unzipAsync` 退出码放宽为 `isUnzipOk(code)` = 0/1 均成功(1=警告但已解压),≥2 才失败并附 unzip stderr 末行便于定位;新增单测 5 项(isUnzipOk:0/1 成功、2/3/null 失败)
+- 真实 zipA(gh-release-center-v0.2.0.zip,反斜杠包)本地端到端上传验证:HTTP 201 安装成功
+
+### 改进:zip 下载/上传内容校验(checkZipBuffer)
+- 上传/链接导入的 zip 先校验魔数(PK 头)+ EOCD 完整性:空/过小报「仅 X 字节,可能损坏或传输中断」、非 zip 报「不是 zip 文件(魔数 ...)」、截断报「不完整(缺少末尾目录)」——不再笼统"解压失败",网络截断/文件损坏一眼可定位
+- 新增 6 项单元测试(标准/空/非zip/截断/isUnzipOk),76/76 全过
+
 ## v0.12.0 (2026-08-06) · UI 重构(粉+磨砂玻璃) + 导入体验完善 + 弹浏览器修复
 
 ### 视觉(按 DESIGN.md 规范)

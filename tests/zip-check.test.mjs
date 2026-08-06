@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert";
 import { zipPack } from "../lib/core/zip.js";
-import { checkZipBuffer } from "../lib/core/upload.js";
+import { checkZipBuffer, isUnzipOk } from "../lib/core/upload.js";
 
 test("checkZipBuffer:标准 zip 通过", () => {
   const buf = zipPack([{ name: "tool.json", data: Buffer.from('{"id":"t1"}', "utf8") }]);
@@ -32,4 +32,13 @@ test("checkZipBuffer:upload.js 纯工具模块可直接用", () => {
   const buf = zipPack([{ name: "x", data: Buffer.from("1") }]);
   assert.doesNotThrow(() => checkZipBuffer(buf));
   assert.throws(() => checkZipBuffer(Buffer.from("not zip content not zip content")), /不是 zip 文件/);
+});
+
+// unzip 退出码语义:0=成功,1=警告(反斜杠路径分隔符等,文件已解压),>=2=真错误
+test("isUnzipOk:0/1 视为成功,>=2 视为失败", () => {
+  assert.ok(isUnzipOk(0), "exit=0 应成功");
+  assert.ok(isUnzipOk(1), "exit=1(警告,如反斜杠打包)应成功");
+  assert.ok(!isUnzipOk(2), "exit=2(真错误)应失败");
+  assert.ok(!isUnzipOk(3), "exit=3 应失败");
+  assert.ok(!isUnzipOk(null), "null 应失败");
 });
