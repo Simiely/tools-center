@@ -141,6 +141,15 @@ const apiSettings = {
   },
 };
 
+/** 应用管理(v0.12.2):更新工具显示信息(名称/图标/分组/描述) */
+const apiToolMeta = {
+  update: async (id, patch) => {
+    const j = await postJSON("/api/tools/meta", { id, ...patch });
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
+};
+
 /** 工具级备份:执行备份 / 列表 / 恢复所选工具 / 下载 zip */
 const apiToolBackup = {
   create: async () => {

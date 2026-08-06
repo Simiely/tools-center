@@ -236,7 +236,7 @@ body::before{
       <button class="sm btn" id="btnRefresh" onclick="btnSpin('btnRefresh', load, '正在刷新工具列表…', '已刷新')">刷新</button>
       <span class="cap-pill" id="capStatus" onclick="openCapDetail()" title="点击查看能力状态"></span>
       <button class="sm btn" id="btnBackup" onclick="openToolBackup()" title="备份/恢复工具">备份</button>
-      <button class="sm btn" id="btnDisk" onclick="openDisk()" title="存储管理(程序/数据分列,大弹窗)">存储</button>
+      <button class="sm btn" id="btnDisk" onclick="openDisk()" title="应用管理(编辑应用显示信息/存储清理,大弹窗)">应用</button>
       <button class="sm btn" id="btnPass" onclick="openPass()" title="修改管理员密码">密码</button>
       <button class="sm btn" onclick="openSettings()" title="功能开关(启用/停用附加模块)">功能</button>
       <button class="sm btn primary" onclick="openAdd()">+ 添加</button>
@@ -398,21 +398,37 @@ body::before{
   </div>
 </div>
 
-<!-- 存储管理大弹窗(2026-08-06:由独立页 /disk.html 改回弹窗,复用 disk-page.js 渲染,点击空白处/Esc/✕ 关闭) -->
+<!-- 应用管理大弹窗(2026-08-06:由独立页 /disk.html 改回弹窗;v0.12.2 更名"应用管理"并支持编辑应用显示信息,点击空白处/Esc/✕ 关闭) -->
 <div class="mask" id="diskMask">
   <div class="modal modal-xl">
     <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <span>🗂️ 存储管理</span>
+      <span>🗂️ 应用管理</span>
       <span style="display:flex;gap:8px">
-        <button class="btn" id="btnDiskRefresh" onclick="btnSpin('btnDiskRefresh', diskRefresh, '正在扫描存储…', '已刷新')">刷新</button>
+        <button class="btn" id="btnDiskRefresh" onclick="btnSpin('btnDiskRefresh', diskRefresh, '正在扫描应用…', '已刷新')">刷新</button>
         <button class="btn primary" onclick="openDiskBackup()">备份全部</button>
         <button class="btn" onclick="closeDisk()">✕ 关闭</button>
       </span>
     </h2>
-    <div class="tip">每个工具占一行,<b>左列程序</b>(代码,可重建)与<b>右列数据</b>(用户数据,单独清理)分开标注。清理/删除前会自动备份到 <code>data/backups/</code>(可还原)。</div>
+    <div class="tip">每个应用占一行,<b>左列程序</b>(代码,可重建)与<b>右列数据</b>(用户数据,单独清理)分开标注;<b>「✏️ 编辑」可修改应用的名称/图标/分组/描述</b>(即首页卡片上显示的内容)。清理/删除前会自动备份到 <code>data/backups/</code>(可还原)。</div>
     <div class="xl-body">
       <div class="stats" id="diskStats"></div>
       <div id="diskList"><div class="ph">加载中…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 应用信息编辑弹窗(v0.12.2:名称/图标/分组/描述,写回 tool.json) -->
+<div class="mask" id="metaMask">
+  <div class="modal">
+    <h2>✏️ 编辑应用信息</h2>
+    <div class="tip">修改后立即写回声明文件(tool.json),首页卡片/分类同步更新。运行配置(cmd/端口)不受影响。</div>
+    <div class="frow"><label>名称</label><input class="finput" id="mName" placeholder="显示在卡片上的名称"></div>
+    <div class="frow"><label>图标</label><input class="finput" id="mIcon" placeholder="Emoji,如 📦"></div>
+    <div class="frow"><label>分组</label><input class="finput" id="mGroup" placeholder="分类标签,如 工具 / 监控"></div>
+    <div class="frow" style="align-items:flex-start"><label>描述</label><textarea class="finput" id="mDesc" rows="2" style="resize:vertical" placeholder="一句话说明"></textarea></div>
+    <div class="acts">
+      <button class="btn" onclick="closeMeta()">取消</button>
+      <button class="btn primary" id="metaSaveBtn" onclick="saveMeta()">保存</button>
     </div>
   </div>
 </div>

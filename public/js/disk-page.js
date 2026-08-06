@@ -1,6 +1,7 @@
-// public/js/disk-page.js - 存储管理(首页大弹窗渲染):程序一列 / 数据一列 分列管理
-// 依赖: api.js($, toast, apiDisk, apiDeleteTool, apiPass, apiToolBackup), ui.js(esc)
+// public/js/disk-page.js - 应用管理(首页大弹窗渲染,v0.12.2 由"存储管理"更名):程序一列 / 数据一列 分列管理 + 应用显示信息编辑
+// 依赖: api.js($, toast, apiDisk, apiDeleteTool, apiPass, apiToolBackup, apiToolMeta), ui.js(esc)
 // v0.11.6:清理/删除前自动备份(后端),数据残留(dataAlone)醒目标注,数据可单独清理。
+// v0.12.2:更名"应用管理";托管中应用新增「✏️ 编辑」(名称/图标/分组/描述,写回 tool.json)。
 let diskItems = [];
 
 function fmtSize(n) {
@@ -78,7 +79,10 @@ function dataBody(i) {
 
 function progActs(i) {
   const btns = [];
-  if (i.kind === "managed") btns.push(`<button class="btn sm danger" onclick="diskDelete('${esc(i.dir)}','${esc(i.name)}')">删除工具</button>`);
+  if (i.kind === "managed") {
+    btns.push(`<button class="btn sm" onclick="openMetaEdit('${esc(i.dir)}')" title="修改名称/图标/分组/描述(首页显示内容)">✏️ 编辑</button>`);
+    btns.push(`<button class="btn sm danger" onclick="diskDelete('${esc(i.dir)}','${esc(i.name)}')">删除工具</button>`);
+  }
   if (i.kind === "removed" || i.kind === "invalid") btns.push(`<button class="btn sm" onclick="diskRestore('${esc(i.dir)}')">恢复托管</button>`);
   if ((i.kind === "removed" || i.kind === "ghost" || i.kind === "invalid") && !i.mount) {
     btns.push(`<button class="btn sm danger" onclick="diskCleanDir('${esc(i.dir)}')">清理目录</button>`);
@@ -154,6 +158,35 @@ async function openDiskBackup() {
   catch (e) { toast(e.message); }
 }
 
-
+/* ---------- 应用信息编辑(v0.12.2:名称/图标/分组/描述,写回 tool.json) ---------- */
+let metaEditingDir = "";
+function openMetaEdit(dir) {
+  const i = diskItems.find(x => x.dir === dir);
+  if (!i) { toast("未找到应用: " + dir); return; }
+  metaEditingDir = dir;
+  $("mName").value = i.name || "";
+  $("mIcon").value = i.icon || "🧰";
+  $("mGroup").value = i.group || "工具";
+  $("mDesc").value = i.desc || "";
+  $("metaMask").classList.add("show");
+  $("mName").focus();
+}
+function closeMeta() { $("metaMask").classList.remove("show"); }
+async function saveMeta() {
+  const name = $("mName").value.trim();
+  if (!name) { toast("名称不能为空"); $("mName").focus(); return; }
+  const btn = $("metaSaveBtn");
+  btn.disabled = true;
+  try {
+    const j = await apiToolMeta.update(metaEditingDir, {
+      name, icon: $("mIcon").value.trim(), group: $("mGroup").value.trim(), desc: $("mDesc").value.trim(),
+    });
+    toast("已保存: " + (j.tool && j.tool.name ? j.tool.name : name));
+    closeMeta();
+    diskRefresh();  // 应用管理列表刷新
+    load();         // 首页卡片/分类同步刷新(全局函数,app.js)
+  } catch (e) { toast(e.message); }
+  finally { btn.disabled = false; }
+}
 
 diskRefresh();

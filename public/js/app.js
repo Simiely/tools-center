@@ -523,6 +523,7 @@ const MASK_CLOSERS = {
   tbMask: closeToolBackup,
   settingsMask: closeSettings,
   diskMask: closeDisk,
+  metaMask: closeMeta,
 };
 document.addEventListener("click", (e) => {
   const mask = e.target.closest ? e.target.closest(".mask") : null;
@@ -531,7 +532,7 @@ document.addEventListener("click", (e) => {
   if (closer) closer();
 });
 
-document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeCap(); closeToolBackup(); closeSettings(); closeDisk(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeCap(); closeToolBackup(); closeSettings(); closeDisk(); closeMeta(); } });
 // 全局错误兜底(2026-08-06):任何 JS 错误/请求异常都 toast 提示,避免"点按钮无反应"难排查
 window.addEventListener("error", (e) => { try { toast("脚本错误: " + ((e && (e.message || (e.error && e.error.message))) || "未知")); } catch {} });
 window.addEventListener("unhandledrejection", (e) => { try { toast("请求异常: " + ((e && e.reason && (e.reason.message || e.reason)) || "未知")); } catch {} });
