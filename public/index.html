@@ -330,13 +330,13 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 <div class="mask" id="settingsMask">
   <div class="modal" style="max-width:520px">
     <h2>功能开关</h2>
-    <div class="tip">控制附加模块是否启用;关闭后对应入口隐藏、后端接口 404(重启后生效)。<b>主干框架(工具托管/访问/日志)不可关。</b></div>
+    <div class="tip">控制附加模块是否启用;关闭后对应入口隐藏、后端接口 404(保存即生效)。<b>主干框架(工具托管/访问/日志)不可关。</b></div>
     <div id="settingsList" style="max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px">
       <div class="tip" style="text-align:center;padding:16px">加载中…</div>
     </div>
     <div class="acts" style="margin-top:12px">
       <button class="btn" onclick="closeSettings()">取消</button>
-      <button class="btn primary" onclick="saveSettings()" id="settingsSaveBtn">保存(重启生效)</button>
+      <button class="btn primary" onclick="saveSettings()" id="settingsSaveBtn">保存(即时生效)</button>
     </div>
   </div>
 </div>

@@ -432,8 +432,9 @@ async function saveSettings() {
   btn.disabled = true;
   try {
     const j = await apiSettings.save(modules, pass || "");
-    toast("已保存:重启后生效");
+    toast("已保存:即时生效");
     closeSettings();
+    loadSettings(); // 当前页面立即按新开关刷新入口显隐(v0.11.9 动态生效)
   } catch (e) { toast(e.message); }
   finally { btn.disabled = false; }
 }

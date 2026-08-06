@@ -55,3 +55,20 @@ test("env 覆盖:MODULES_STORAGE=0 优先于文件", () => {
   assert.equal(m.storage, false, "env 应覆盖");
   delete process.env.MODULES_STORAGE;
 });
+
+test("rebuildRoutes:保存设置后动态生效(零重启,v0.11.9)", () => {
+  // 全开基线
+  settings.setModules({ storage: true, auth: true, import: true, backup: true, webdav: true, capabilities: true });
+  routesMod.rebuildRoutes();
+  const has = (p) => routesMod.routes.some(r => (r.p || r.prefix) === p);
+  assert.ok(has("/api/admin/disk"), "全开时 disk 路由在");
+  // 关闭 storage → rebuild → 路由立即消失(不重启)
+  settings.setModules({ storage: false });
+  routesMod.rebuildRoutes();
+  assert.ok(!has("/api/admin/disk"), "rebuild 后 disk 路由应立即消失");
+  assert.ok(has("/api/admin/settings"), "settings 主干恒在");
+  // 开回 → rebuild → 恢复
+  settings.setModules({ storage: true });
+  routesMod.rebuildRoutes();
+  assert.ok(has("/api/admin/disk"), "rebuild 后 disk 路由应恢复");
+});
