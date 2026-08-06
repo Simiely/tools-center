@@ -10,12 +10,6 @@ function fmtSize(n) {
   if (n < 1048576) return (n / 1024).toFixed(0) + " KB";
   return (n / 1048576).toFixed(1) + " MB";
 }
-function fmtTime(ms) {
-  if (!ms) return "";
-  const d = new Date(ms);
-  return (d.getMonth() + 1) + "-" + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-}
-
 function kindBadge(kind) {
   const map = { managed: ["b-managed", "托管中"], invalid: ["b-invalid", "无效配置"], removed: ["b-removed", "已解除托管"], ghost: ["b-ghost", "幽灵目录"] };
   const [cls, txt] = map[kind] || ["", kind];
@@ -80,20 +74,33 @@ function dataBody(i) {
 function progActs(i) {
   const btns = [];
   if (i.kind === "managed") {
-    btns.push(`<button class="btn sm" onclick="openMetaEdit('${esc(i.dir)}')" title="修改名称/图标/分组/描述(首页显示内容)">✏️ 编辑</button>`);
-    btns.push(`<button class="btn sm danger" onclick="diskDelete('${esc(i.dir)}','${esc(i.name)}')">删除工具</button>`);
+    btns.push(`<button class="btn sm disk-act" data-act="edit" data-dir="${esc(i.dir)}" title="修改名称/图标/分组/描述(首页显示内容)">✏️ 编辑</button>`);
+    btns.push(`<button class="btn sm danger disk-act" data-act="delete" data-dir="${esc(i.dir)}" data-name="${esc(i.name)}">删除工具</button>`);
   }
-  if (i.kind === "removed" || i.kind === "invalid") btns.push(`<button class="btn sm" onclick="diskRestore('${esc(i.dir)}')">恢复托管</button>`);
+  if (i.kind === "removed" || i.kind === "invalid") btns.push(`<button class="btn sm disk-act" data-act="restore" data-dir="${esc(i.dir)}">恢复托管</button>`);
   if ((i.kind === "removed" || i.kind === "ghost" || i.kind === "invalid") && !i.mount) {
-    btns.push(`<button class="btn sm danger" onclick="diskCleanDir('${esc(i.dir)}')">清理目录</button>`);
+    btns.push(`<button class="btn sm danger disk-act" data-act="clean" data-dir="${esc(i.dir)}">清理目录</button>`);
   }
   return btns.join("");
 }
 
 function dataActs(i) {
   if (!(i.dataSize > 0)) return "";
-  return `<button class="btn sm danger" onclick="diskCleanData('${esc(i.dir)}','${esc(i.name)}')">清理数据</button>`;
+  return `<button class="btn sm danger disk-act" data-act="data" data-dir="${esc(i.dir)}" data-name="${esc(i.name)}">清理数据</button>`;
 }
+
+// 应用管理操作事件委托(2026-08-06 审计加固):参数走 data-* 属性而非内联 onclick 字符串拼接,
+// 目录/名称含单引号等特殊字符也不会破坏 JS(改名功能使 name 用户可控,旧写法会直接语法错误)
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest ? e.target.closest(".disk-act") : null;
+  if (!b) return;
+  const act = b.dataset.act, dir = b.dataset.dir, name = b.dataset.name || dir;
+  if (act === "edit") openMetaEdit(dir);
+  else if (act === "delete") diskDelete(dir, name);
+  else if (act === "restore") diskRestore(dir);
+  else if (act === "clean") diskCleanDir(dir);
+  else if (act === "data") diskCleanData(dir, name);
+});
 
 /* ---------- 密码与确认 ---------- */
 async function needPass() { try { const s = await apiPass.status(); return !!(s && s.set); } catch { return true; } }
@@ -188,5 +195,3 @@ async function saveMeta() {
   } catch (e) { toast(e.message); }
   finally { btn.disabled = false; }
 }
-
-diskRefresh();

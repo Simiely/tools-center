@@ -56,11 +56,6 @@ const apiDisk = {
   },
 };
 
-/** 读取工具日志 */
-async function apiLogs(id) {
-  return getJSON("/api/logs/" + id);
-}
-
 /** 校验 manifest */
 async function apiValidate(manifest) {
   return (await fetch("/api/tools/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ manifest }) })).json();
@@ -102,16 +97,6 @@ async function apiImport(url, branch, id, confirm) {
     }
     if (Date.now() > deadline) throw new Error("导入超时(超过 6 分钟),请检查网络/代理后重试");
   }
-}
-
-/** 上传 zip 到工具目录并重启 */
-async function apiUploadZip(id, zip) {
-  const fd = new FormData();
-  fd.append("path", "tools/" + id + "/");
-  fd.append("file", zip, zip.name);
-  const j = await (await fetch("/api/files", { method: "POST", body: fd })).json();
-  if (!j.ok) throw new Error(j.error);
-  await fetch("/api/tools/" + id + "/restart", { method: "POST" });
 }
 
 /** 零输入上传(2026-08-06):纯 zip 不带 path,后端从 zip 内 tool.json 自动创建/更新工具 */

@@ -2,6 +2,24 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.12.3 (2026-08-06) · 全量代码审计修复(高危 RCE + 路径穿越 + 前端健壮性)
+
+### 安全(高危)
+- **修复 RCE:resolveWithinRoot 根错位**(upload.js)——旧实现 root=DIRS.tools 的父级(项目根),`POST /api/files` 无鉴权 + 任意 path(如 `lib/core/auth.js`)可写项目根任意文件 → 任意代码执行;**实测写入 lib/ 目录证实**。已收紧:结果必须落在 `tools/` 或 `data/` 下,恶意路径报"路径越界"(实测拦截),正常路径放行
+- **修复 webdavDownload 路径穿越**(core/backup.js)——`remoteTs`(用户参数)只允许纯数字时间戳;`t.id`/`rel`(云端 manifest 可控)经 `safeJoin` 校验必须落在恢复目录内(实测 `../../etc`/`abc123` 全部拦截)
+
+### 修复
+- **manager 暂停→恢复后 stopped 标记残留**:该进程崩溃后 exit 回调直接 return → 不再自动拉起(restart:always 失效);start() 启动时重置 `rec.stopped=false`
+- **前端应用管理内联 onclick 改事件委托**(disk-page.js):参数走 `data-dir`/`data-name` 属性而非 `esc()` 塞单引号字符串——名称含单引号不再导致删除按钮 JS 崩溃(改名功能使 name 用户可控);实测"O'Brien"类名称正常
+- **Esc 补全**:passMask/cfmMask 此前点击空白可关但 Esc 关不了,行为不一致,已补齐
+- **删除 disk-page.js 顶层 `diskRefresh()` 副作用**:违背"仅 app.js 有启动副作用"约定且加载即发请求(openDisk 已刷新)
+
+### 清理
+- 死代码:disk-page.js `fmtTime`、api.js `apiLogs`/`apiUploadZip`(无调用)、app.js 重复 JSDoc 注释块
+
+### 验证
+- 76/76 测试全过;RCE / webdav 穿越本地实测拦截;应用管理编辑(含特殊字符名称)端到端正常
+
 ## v0.12.2 (2026-08-06) · 应用管理(存储管理更名)+ 应用显示信息可编辑
 
 ### 存储管理 → 应用管理

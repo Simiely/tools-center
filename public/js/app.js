@@ -176,10 +176,6 @@ function resetAddForm() {
  * 覆盖升级/降级提示(2026-08-06):根据后端返回的 upgrade {from,to,direction} 区分提示。
  * direction: up=升级 / down=降级(旧版覆盖新版,警示) / same=同版本 / unknown=任一方无 version 字段
  */
-/**
- * 覆盖升级/降级提示(2026-08-06):根据后端返回的 upgrade {from,to,direction} 区分提示。
- * direction: up=升级 / down=降级(旧版覆盖新版,警示) / same=同版本 / unknown=任一方无 version 字段
- */
 function upgradeToast(j, createdText, updatedText) {
   if (j.created) return createdText;
   const u = j.upgrade;
@@ -532,7 +528,7 @@ document.addEventListener("click", (e) => {
   if (closer) closer();
 });
 
-document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeCap(); closeToolBackup(); closeSettings(); closeDisk(); closeMeta(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeCap(); closeCfm(false); closePass(); closeToolBackup(); closeSettings(); closeDisk(); closeMeta(); } });
 // 全局错误兜底(2026-08-06):任何 JS 错误/请求异常都 toast 提示,避免"点按钮无反应"难排查
 window.addEventListener("error", (e) => { try { toast("脚本错误: " + ((e && (e.message || (e.error && e.error.message))) || "未知")); } catch {} });
 window.addEventListener("unhandledrejection", (e) => { try { toast("请求异常: " + ((e && e.reason && (e.reason.message || e.reason)) || "未知")); } catch {} });
