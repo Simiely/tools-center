@@ -172,6 +172,19 @@ function resetAddForm() {
   const br = $("fGitBranchRow"); if (br) br.style.display = "none";
 }
 
+/**
+ * 覆盖升级/降级提示(2026-08-06):根据后端返回的 upgrade {from,to,direction} 区分提示。
+ * direction: up=升级 / down=降级(旧版覆盖新版,警示) / same=同版本 / unknown=任一方无 version 字段
+ */
+function upgradeToast(j, createdText, updatedText) {
+  if (j.created) return createdText;
+  const u = j.upgrade;
+  if (!u || u.direction === "unknown") return updatedText;
+  if (u.direction === "up") return `已升级 ${u.from || "?"} → ${u.to}`;
+  if (u.direction === "down") return `⚠️ 已回退 ${u.to} → ${u.from}(旧版覆盖了新版!)`;
+  return `已覆盖(同版本 ${u.to})`;
+}
+
 let adding = false; // 防重复提交锁(连点会创建多个副本)
 async function saveAdd() {
   if (adding) return; // 提交中,忽略重复点击
@@ -184,7 +197,7 @@ async function saveAdd() {
       const j = await apiUploadZipAuto(selZip);
       closeAdd();
       resetAddForm();
-      toast(j.created ? "已从 zip 自动创建" : "已用 zip 覆盖更新");
+      toast(upgradeToast(j, "已从 zip 自动创建", "已用 zip 覆盖更新"));
       load();
     } catch (e) { toast(e.message); }
     finally { adding = false; }
@@ -204,7 +217,7 @@ async function saveAdd() {
       const created = j.created !== false;
       closeAdd();
       resetAddForm();
-      toast(created ? "已从链接自动创建" : "已用链接覆盖更新");
+      toast(upgradeToast(j, "已从链接自动创建", "已用链接覆盖更新"));
       load();
     } finally { onImportProgress = null; hideImportBar(); setSavingUI(false); }
     return;
