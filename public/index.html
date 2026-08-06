@@ -6,21 +6,35 @@
 <title>Tools Center</title>
 <style>
 :root{
-  --bg:#0a0d11; --surface:#13171e; --card:#1a1f29; --card-hover:#1f2530;
-  --text:#eeeeee; --text2:#959da8; --text3:#5a6270;
-  --line:#20262f; --line2:#2d3540;
-  --brand:#ff7043; --brand-dim:#ff70431a;
-  --ok:#4ade80; --warn:#facc15; --bad:#f87171;
+  /* 中性色(深色基底,按 DESIGN.md) */
+  --bg:#141419; --surface:#1d1d26; --card:#24242f; --card-hover:#2a2a38;
+  --text:#e8e8f0; --text2:#9a9ab0; --text3:#6c6c85;
+  --line:#2e2e3d; --line2:#3a3a4d;
+  /* 主色:粉 #ff9292 系(色阶递进,hover/active 一律走色阶,禁止滤镜变体) */
+  --brand:#ff9292; --brand-h:#ff7a7a; --brand-a:#e67878; --brand-b:#cc7575; --brand-d:#995858;
+  --brand-dim:#ff92921a; --on-brand:#2d1414; --pink2:#ffb3b3;
+  /* 辅助色:互补青 / 蜜桃 / 粉紫 / 蓝紫 / 紫 */
+  --cyan:#92ffff; --peach:#ffc892; --ppink:#ff92c8; --bpink:#b0a0ff; --purple:#a78bfa;
+  /* 语义色 */
+  --ok:#6dd58c; --warn:#ffc892; --bad:#ff6b6b; --amber:#ffc892; --coral:#ff8a5c;
   --r2:6px; --r3:10px; --r4:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px}
-body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+html{font-size:16px;background:var(--bg)}
+body{background:transparent;color:var(--text);font-family:"SF Pro Display","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+/* 背景光斑层(DESIGN.md 2.2):磨砂玻璃的前提——三色 = 主粉/互补青/紫,透明度宁弱勿强 */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(640px 420px at 12% -6%, rgba(255,146,146,.16), transparent 70%),
+    radial-gradient(760px 520px at 90% 110%, rgba(146,255,255,.11), transparent 70%),
+    radial-gradient(540px 400px at 62% 128%, rgba(167,139,250,.10), transparent 70%);
+}
 
-.header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.header{position:sticky;top:0;z-index:50;background:rgba(20,20,25,.55);border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .header-inner{max-width:1200px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .logo{display:flex;align-items:center;gap:10px}
-.logo-icon{width:36px;height:36px;border-radius:var(--r2);background:linear-gradient(135deg,var(--brand),#ff5722);display:grid;place-items:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0}
+.logo-icon{width:36px;height:36px;border-radius:var(--r2);background:linear-gradient(135deg,var(--brand),var(--brand-h));display:grid;place-items:center;color:var(--on-brand);font-weight:800;font-size:16px;flex-shrink:0}
 .logo-text{font-size:17px;font-weight:600;letter-spacing:-.3px}
 .logo-text span{color:var(--text3);font-weight:400;margin-left:4px;font-size:12px}
 .hdr-acts{display:flex;align-items:center;gap:8px}
@@ -32,7 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .cap-pill.has-err{color:var(--bad);border-color:var(--bad)55;background:var(--bad)10;animation:cap-warn 2s ease-in-out infinite}
 @keyframes cap-warn{0%,100%{opacity:.7}50%{opacity:1}}
 
-.tabs{position:sticky;top:56px;z-index:40;background:var(--bg);border-bottom:1px solid var(--line)}
+.tabs{position:sticky;top:56px;z-index:40;background:rgba(20,20,25,.45);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%)}
 .tabs-inner{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs-inner::-webkit-scrollbar{display:none}
 .tab{padding:10px 16px;font-size:12px;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s;flex-shrink:0}
@@ -46,13 +60,13 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 @media(min-width:500px){.grid{gap:10px}}
 @media(min-width:768px){.grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px}}
 
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r3);padding:10px 6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;transition:.18s;position:relative;overflow:hidden}
-.card:hover{background:var(--card-hover);border-color:var(--line2);transform:translateY(-1px)}
+.card{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:var(--r3);padding:10px 6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;transition:.18s;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,146,146,.75);transform:translateY(-2px)}
 .card:active{transform:translateY(0)}
 .card-icon{width:36px;height:36px;border-radius:10px;background:var(--surface);display:grid;place-items:center;font-size:20px;flex-shrink:0}
 .card-tag{font-size:9px;padding:1px 6px;border-radius:6px;position:absolute;top:6px;right:6px}
 .card-tag.hosted{background:var(--brand-dim);color:var(--brand)}
-.card-tag.link{background:#4ade8014;color:var(--ok)}
+.card-tag.link{background:var(--ok)14;color:var(--ok)}
 .card-name{font-size:11px;font-weight:600;line-height:1.3;word-break:break-word}
 .card-desc{display:none}
 .card-foot{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text3);margin-top:auto}
@@ -60,7 +74,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .card-dot.ok{background:var(--ok)} .card-dot.warn{background:var(--warn)} .card-dot.bad{background:var(--bad)}
 .del-btn{position:absolute;bottom:4px;right:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:var(--r2);opacity:.7;transition:.15s}
 .card:hover .del-btn,.del-btn:focus-visible{opacity:1}
-.del-btn:hover{color:var(--bad);background:#f8717114}
+.del-btn:hover{color:var(--bad);background:var(--bad)14}
 /* 详情按钮(卡片左下 ⓘ,与删除按钮对称;点击弹详情而非打开) */
 .info-btn{position:absolute;bottom:4px;left:4px;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:var(--r2);opacity:.7;transition:.15s;line-height:1}
 .card:hover .info-btn,.info-btn:focus-visible{opacity:1}
@@ -119,9 +133,9 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .empty-icon{font-size:48px;margin-bottom:12px;opacity:.4}
 .empty p{font-size:13px;color:var(--text2);margin-top:6px}
 
-.mask{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.mask{position:fixed;inset:0;background:rgba(8,8,12,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
 .mask.show{display:flex}
-.modal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r4);width:100%;max-width:500px;max-height:90vh;overflow:auto;padding:22px}
+.modal{background:rgba(29,29,38,.82);border:1px solid rgba(255,255,255,.14);border-radius:var(--r4);width:100%;max-width:500px;max-height:90vh;overflow:auto;padding:22px;backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 18px 50px rgba(0,0,0,.5)}
 .modal h2{font-size:15px;font-weight:600;margin-bottom:16px}
 .frow{margin-bottom:12px}
 .frow label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500}
@@ -137,10 +151,11 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .dz-label{font-size:12px;color:var(--text2)}
 .dz-info{font-size:10px;color:var(--text3);margin-top:2px}
 .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
-.btn{font:inherit;font-size:12px;padding:8px 16px;border-radius:var(--r2);border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer;font-weight:500;transition:.15s}
+.btn{font:inherit;font-size:12px;padding:8px 16px;border-radius:var(--r2);border:1px solid var(--line);background:rgba(36,36,47,.75);color:var(--text);cursor:pointer;font-weight:500;transition:.15s}
 .btn:hover{border-color:var(--brand)}
-.btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
-.btn.primary:hover{background:#ff5722}
+.btn.primary{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.btn.primary:hover{background:var(--brand-h)}
+.btn.primary:active{background:var(--brand-a)}
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .btn.sm{font-size:11px;padding:5px 12px}
 /* 刷新按钮交互(2026-08-06):点击后尾部出现旋转图标 + 禁用防连点,完成后恢复 */
@@ -151,7 +166,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .detect{font-size:11px;padding:6px 10px;border-radius:var(--r2);margin-bottom:10px;line-height:1.6;background:var(--surface);border:1px solid var(--line)}
 .detect .d-tag{font-size:10px;padding:1px 7px;border-radius:9px;margin-right:6px;font-weight:500}
 .detect.d-git{border-color:var(--ok)44}.detect.d-git .d-tag{color:var(--ok);border:1px solid var(--ok)44;background:var(--ok)10}
-.detect.d-zip{border-color:#85B7EB55}.detect.d-zip .d-tag{color:#85B7EB;border:1px solid #85B7EB55;background:#185FA520}
+.detect.d-zip{border-color:var(--cyan)55}.detect.d-zip .d-tag{color:var(--cyan);border:1px solid var(--cyan)55;background:var(--cyan)20}
 .detect.d-link{border-color:var(--line2)}.detect.d-link .d-tag{color:var(--text2);border:1px solid var(--line2);background:var(--bg)}
 .detect.d-app{border-color:var(--warn)44}.detect.d-app .d-tag{color:var(--warn);border:1px solid var(--warn)44;background:var(--warn)10}
 .preview{background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--text2);white-space:pre-wrap;max-height:100px;overflow:auto}
@@ -206,6 +221,12 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 /* 存储弹窗占位/空态提示(disk-page.js 用到,首页原无) */
 .ph{text-align:center;color:var(--text3);padding:40px 0;font-size:12px}
 .tip code{background:var(--card);padding:1px 4px;border-radius:4px}
+/* 降级策略(DESIGN.md 2.5):无 backdrop-filter 环境 → 纯半透明/实底面板,玻璃是增强不是必需 */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .header,.tabs{background:rgba(20,20,25,.94)}
+  .card{background:rgba(255,255,255,.05)}
+  .modal{background:#1d1d26}
+}
 </style>
 </head>
 <body>
