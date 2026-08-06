@@ -191,7 +191,7 @@ async function saveAdd() {
     return;
   }
   // ② import 模块关闭时禁止 zip/git 导入
-  if ((mode === "zip" || mode === "git") && __importDisabled) { toast("在线导入已关闭(设置 → 功能开关 → import)"); return; }
+  if ((mode === "zip" || mode === "git") && __importDisabled) { toast("在线导入已关闭(功能 → import 可开启)"); return; }
   // ③ 在线导入(zip 链接 / git 仓库),异步任务 + 进度条,名称可留空
   if (mode === "zip" || mode === "git") {
     if (!/^https?:\/\//.test(spec.url || "")) { toast("Git 仓库 / zip 链接需 http(s) 地址"); return; }
