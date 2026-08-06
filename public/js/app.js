@@ -421,11 +421,10 @@ async function loadSettings() {
     hide("btnBackup", m.backup === false);
     hide("btnPass", m.auth === false);
     hide("capStatus", m.capabilities === false);
-    // import 关闭:隐藏 zip 拖拽 + 禁止在线导入识别(v0.11.10 统一入口)
-    if (m.import === false) {
-      __importDisabled = true;
-      const drop = document.getElementById("dropZone"); if (drop) drop.style.display = "none";
-    }
+    // import 关闭:隐藏 zip 拖拽 + 禁止在线导入识别(v0.11.10 统一入口;每次按当前开关重置)
+    __importDisabled = m.import === false;
+    const drop = document.getElementById("dropZone");
+    if (drop) drop.style.display = __importDisabled ? "none" : "";
   } catch { /* 设置读取失败不影响主界面 */ }
 }
 
