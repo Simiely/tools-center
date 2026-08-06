@@ -190,13 +190,17 @@ NAS 上的 headless Chromium 不便扫码登录，**需登录的工具建议放 
 
 ## 6. 升级
 
-### 平台自身升级（必须拉镜像）
+### 平台自身升级（必须拉镜像 + 重启容器）
 
 ```bash
 cd /path/to/tools-center  # 或 NAS 共享目录
-docker compose pull        # 拉取新镜像
-docker compose up -d       # 重启（数据卷保留）
+docker compose pull && docker compose up -d --force-recreate   # 一条连着执行:拉镜像 + 重建容器
 ```
+
+> ⚠️ **⚠️ 常见坑（反复出现，务必注意）：`docker compose pull` 之后忘了 `up -d`** ——
+> 镜像虽然拉下来了，但**容器还在跑旧版本**，前端/后端全是旧代码，新功能"像没更新一样"（升级后页面底部版本号不变、新按钮/新逻辑不出现）。
+> **`pull` 和 `up -d` 必须连着执行**；用 `--force-recreate` 强制重建容器（防止 compose 误判"配置没变"而跳过重建）。
+> **确认生效**：页面底部显示 `Tools Center vX.Y.Z`（v0.11.1+），升级后版本号变化即确认生效。
 
 > **为什么不能"热更新"？** Docker 镜像层不可变，平台代码（`/app/lib`、`/app/public`）在构建时焊死，更新平台必须重拉镜像 + 重建容器（中断约 10-30 秒）。这是所有容器化应用的通用机制。
 > **升级确认**：页面底部显示版本号（`Tools Center vX.Y.Z`，v0.11.1+），升级后版本号变化即确认生效。
