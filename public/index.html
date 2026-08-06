@@ -166,9 +166,10 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
       <span class="hdr-stat" id="stat">—</span>
       <button class="sm btn" onclick="load()">刷新</button>
       <span class="cap-pill" id="capStatus" onclick="openCapDetail()" title="点击查看能力状态"></span>
-      <button class="sm btn" onclick="openToolBackup()" title="备份/恢复工具">备份</button>
-      <button class="sm btn" onclick="window.open('/disk.html','_blank')" title="存储管理(独立页:程序/数据分列)">存储</button>
-      <button class="sm btn" onclick="openPass()" title="修改管理员密码">密码</button>
+      <button class="sm btn" id="btnBackup" onclick="openToolBackup()" title="备份/恢复工具">备份</button>
+      <button class="sm btn" id="btnDisk" onclick="window.open('/disk.html','_blank')" title="存储管理(独立页:程序/数据分列)">存储</button>
+      <button class="sm btn" id="btnPass" onclick="openPass()" title="修改管理员密码">密码</button>
+      <button class="sm btn" onclick="openSettings()" title="功能开关设置">设置</button>
       <button class="sm btn primary" onclick="openAdd()">+ 添加</button>
     </div>
   </div>
@@ -324,6 +325,21 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 </div>
 
 <!-- 存储管理已改为独立页 /disk.html(程序/数据两列,2026-08-06),见 public/disk.html -->
+
+<!-- 设置弹窗:功能模块开关(v0.11.7) -->
+<div class="mask" id="settingsMask">
+  <div class="modal" style="max-width:520px">
+    <h2>功能开关</h2>
+    <div class="tip">控制附加模块是否启用;关闭后对应入口隐藏、后端接口 404(重启后生效)。<b>主干框架(工具托管/访问/日志)不可关。</b></div>
+    <div id="settingsList" style="max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px">
+      <div class="tip" style="text-align:center;padding:16px">加载中…</div>
+    </div>
+    <div class="acts" style="margin-top:12px">
+      <button class="btn" onclick="closeSettings()">取消</button>
+      <button class="btn primary" onclick="saveSettings()" id="settingsSaveBtn">保存(重启生效)</button>
+    </div>
+  </div>
+</div>
 
 <script src="/js/api.js"></script>
 <script src="/js/ui.js"></script>

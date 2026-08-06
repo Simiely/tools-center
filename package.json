@@ -1,6 +1,6 @@
 {
   "name": "tools-center",
-  "version": "0.11.6",
+  "version": "0.11.7",
   "description": "Tools Center V2:统一运行时 + 可插拔能力模块 + 声明式工具插件",
   "private": true,
   "type": "module",
@@ -8,6 +8,6 @@
     "start": "node server.mjs",
     "dev": "node server.mjs 8080",
     "check": "node scripts/check.mjs",
-    "test": "node --test --test-concurrency=1 tests/auth.test.mjs tests/disk-ops.test.mjs tests/git.test.mjs tests/manager.test.mjs tests/manifest.test.mjs tests/proxy.test.mjs tests/registry-ghost.test.mjs tests/registry.test.mjs tests/toolbackup.test.mjs tests/zip.test.mjs"
+    "test": "node --test --test-concurrency=1 tests/auth.test.mjs tests/disk-ops.test.mjs tests/git.test.mjs tests/manager.test.mjs tests/manifest.test.mjs tests/proxy.test.mjs tests/registry-ghost.test.mjs tests/registry.test.mjs tests/settings.test.mjs tests/routes-filter.test.mjs tests/toolbackup.test.mjs tests/zip.test.mjs"
   }
 }

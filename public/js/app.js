@@ -380,10 +380,69 @@ async function tbRestoreSelected() {
   } catch (e) { toast(e.message); }
 }
 
+/* ---------- 功能开关(v0.11.7):模块入口显隐 + 设置弹窗 ---------- */
+async function loadSettings() {
+  try {
+    const j = await apiSettings.get();
+    if (!j.ok) return;
+    const m = j.modules || {};
+    const hide = (id, off) => { if (off) { const b = document.getElementById(id); if (b) b.style.display = "none"; } };
+    hide("btnDisk", m.storage === false);
+    hide("btnBackup", m.backup === false);
+    hide("btnPass", m.auth === false);
+    hide("capStatus", m.capabilities === false);
+    // import 关闭:「+ 添加」隐藏 Git 导入选项与 zip 拖拽(仅保留名称创建)
+    if (m.import === false) {
+      const ft = document.getElementById("ftGit"); if (ft) ft.style.display = "none";
+      const drop = document.getElementById("dropZone"); if (drop) drop.style.display = "none";
+    }
+  } catch { /* 设置读取失败不影响主界面 */ }
+}
+
+function openSettings() {
+  $("settingsMask").classList.add("show");
+  $("settingsList").innerHTML = '<div class="tip" style="text-align:center;padding:16px">加载中…</div>';
+  (async () => {
+    try {
+      const j = await apiSettings.get();
+      if (!j.ok) throw new Error(j.error);
+      const m = j.modules || {}, info = j.info || {};
+      $("settingsList").innerHTML = Object.keys(m).map(k => {
+        const i = info[k] || { name: k, desc: "" };
+        return `<label style="display:flex;align-items:flex-start;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer">
+          <input type="checkbox" data-key="${esc(k)}" ${m[k] ? "checked" : ""} style="margin-top:2px">
+          <span style="flex:1">
+            <span style="font-size:12.5px;font-weight:500">${esc(i.name)}</span>
+            <span style="display:block;font-size:10.5px;color:var(--text3);margin-top:2px">${esc(i.desc)}</span>
+          </span>
+        </label>`;
+      }).join("");
+    } catch (e) { $("settingsList").innerHTML = '<div class="tip" style="color:var(--bad)">' + esc(e.message) + '</div>'; }
+  })();
+}
+function closeSettings() { $("settingsMask").classList.remove("show"); }
+
+async function saveSettings() {
+  const btn = $("settingsSaveBtn"); if (btn.disabled) return;
+  const modules = {};
+  document.querySelectorAll("#settingsList input[type=checkbox]").forEach(cb => { modules[cb.dataset.key] = cb.checked; });
+  // 密码:已设置则要求输入(auth 关闭时后端免密)
+  let pass = "";
+  try { const s = await apiPass.status(); if (s && s.set) { pass = prompt("保存功能开关需要管理员密码:", ""); if (pass === null) return; } } catch {}
+  btn.disabled = true;
+  try {
+    const j = await apiSettings.save(modules, pass || "");
+    toast("已保存:重启后生效");
+    closeSettings();
+  } catch (e) { toast(e.message); }
+  finally { btn.disabled = false; }
+}
+
 /* ---------- 初始化 ---------- */
 // 密码可选:初次登录不强制设置(不再自动弹窗),用户想用密码时点顶栏「密码」设置
-document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeToolBackup(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeAdd(); closeDet(); closeToolBackup(); closeSettings(); } });
 // 全局错误兜底(2026-08-06):任何 JS 错误/请求异常都 toast 提示,避免"点按钮无反应"难排查
 window.addEventListener("error", (e) => { try { toast("脚本错误: " + ((e && (e.message || (e.error && e.error.message))) || "未知")); } catch {} });
 window.addEventListener("unhandledrejection", (e) => { try { toast("请求异常: " + ((e && e.reason && (e.reason.message || e.reason)) || "未知")); } catch {} });
 load();
+loadSettings();

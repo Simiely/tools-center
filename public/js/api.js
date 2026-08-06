@@ -121,6 +121,16 @@ const apiPass = {
   change: (oldPass, newPass) => postJSON("/api/admin/pass/change", { oldPass, newPass }),
 };
 
+/** 功能开关(v0.11.7):读取模块开关 / 保存(密码) */
+const apiSettings = {
+  get: () => getJSON("/api/admin/settings"),
+  save: async (modules, pass) => {
+    const j = await postJSON("/api/admin/settings", { modules, pass });
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
+};
+
 /** 工具级备份:执行备份 / 列表 / 恢复所选工具 / 下载 zip */
 const apiToolBackup = {
   create: async () => {

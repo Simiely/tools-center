@@ -2,6 +2,14 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.11.7 (2026-08-06) · 整体功能开关(附加模块可启停)
+
+- **功能开关中心**:新增 `lib/core/settings.js`——`data/settings.json` 持久化 + 环境变量覆盖(`MODULES_STORAGE=0` 等);6 个附加模块(storage 存储/backup 备份/webdav 云同步/auth 密码/capabilities 能力/import 在线导入)默认全开
+- **路由级过滤**:`lib/routes/index.js` 按开关构建路由——关闭的模块整组不注册,后端接口 404(前端入口同步隐藏);主干(CRUD/反代/静态/设置)恒注册
+- **import 模块归位**:在线导入路由(Git/zip 链接)从 tools-crud 迁入 tools-files,统一"导入"模块;cap.js 拆能力(可关)与静态(主干)
+- **设置 UI**:首页顶栏「设置」弹窗,模块开关列表(名称+说明),保存需密码(auth 开启时);`/api/admin/settings` 为主干路由,关掉 auth 后仍能开回
+- 测试 +7(settings 读写/env 覆盖/路由过滤/主干恒在)→ 68/68;使用指南新增「功能开关」章节
+
 ## v0.11.6 (2026-08-06) · 存储管理两列化(程序/数据/垃圾分列 + 独立页)
 
 - **数据识别引擎**:`classifyDirFiles` 三分类(程序/数据/垃圾)——通用规则(`*.db*` SQLite 三件套连带、`data/ logs/ uploads/` 目录、`.env` 等)+ 工具 `tool.json` `dataFiles` 声明(glob)叠加;`tool.json/manifest.json/package.json` 等程序核心**硬保护永不归数据**;`upload.zip`/`.tmp-*` 归垃圾
