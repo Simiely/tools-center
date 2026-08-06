@@ -1,6 +1,6 @@
 // public/js/app.js - 主逻辑:加载/添加工具/密码/事件绑定/初始化
 // 依赖: api.js($, toast, api*), ui.js(esc/capLabel/loadCaps), cards.js(renderTabs/renderCards),
-//       detail.js(openDetail/loadLog), disk.js(openDiskMgr)
+//       detail.js(openDetail/loadLog), disk-page.js(存储管理弹窗)
 
 /* ---------- 加载工具列表 ---------- */
 async function load() {

@@ -1,4 +1,4 @@
-// public/js/disk-page.js - 存储管理独立页(/disk.html):程序一列 / 数据一列 分列管理
+// public/js/disk-page.js - 存储管理(首页大弹窗渲染):程序一列 / 数据一列 分列管理
 // 依赖: api.js($, toast, apiDisk, apiDeleteTool, apiPass, apiToolBackup), ui.js(esc)
 // v0.11.6:清理/删除前自动备份(后端),数据残留(dataAlone)醒目标注,数据可单独清理。
 let diskItems = [];
@@ -154,8 +154,6 @@ async function openDiskBackup() {
   catch (e) { toast(e.message); }
 }
 
-(async () => {
-  try { const j = await getJSON("/api/version"); if (j && j.version) $("ver").textContent = "v" + j.version; } catch {}
-})();
+
 
 diskRefresh();

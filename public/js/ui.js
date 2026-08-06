@@ -1,6 +1,6 @@
 // public/js/ui.js - 基础 UI 工具与顶栏:esc/toast/capLabel/能力指示器/能力弹层
 // 依赖: api.js(全局函数 $, toast)
-// 工具列表渲染 → cards.js;详情弹层 → detail.js;存储管理 → disk.js
+// 工具列表渲染 → cards.js;详情弹层 → detail.js;存储管理 → disk-page.js(首页大弹窗)
 
 /** HTML 转义(防注入) */
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }

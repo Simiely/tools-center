@@ -142,9 +142,6 @@ body::before{
 .finput{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);color:var(--text);padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
 .finput:focus{border-color:var(--brand)}
 .finput::placeholder{color:var(--text3)}
-.ftype{display:flex;gap:8px;margin-bottom:14px}
-.ftype button{flex:1;padding:9px;border-radius:var(--r2);border:1px solid var(--line);background:var(--bg);color:var(--text2);cursor:pointer;font-size:12px;font-family:inherit}
-.ftype button.on{border-color:var(--brand);color:var(--brand);background:var(--brand-dim)}
 .drop-zone{border:2px dashed var(--line);border-radius:var(--r3);padding:22px;text-align:center;cursor:pointer;background:var(--bg);transition:.15s}
 .drop-zone:hover{border-color:var(--brand)}
 .dz-icon{font-size:32px;margin-bottom:4px}
@@ -183,7 +180,7 @@ body::before{
 /* 大弹窗(存储管理等内容较多的页面级弹窗) */
 .modal-xl{max-width:min(1180px,96vw);max-height:92vh;display:flex;flex-direction:column;padding:20px 22px}
 .modal-xl .xl-body{flex:1;overflow:auto;min-height:0;padding-right:4px}
-/* 存储管理(disk-page.js 渲染,样式与独立页 /disk.html 一致) */
+/* 存储管理(disk-page.js 渲染,首页大弹窗) */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r3);padding:12px 14px}
 .stat .s-label{font-size:11px;color:var(--text3);margin-bottom:4px}
@@ -385,8 +382,6 @@ body::before{
     </div>
   </div>
 </div>
-
-<!-- 存储管理已改为独立页 /disk.html(程序/数据两列,2026-08-06),见 public/disk.html -->
 
 <!-- 设置弹窗:功能模块开关(v0.11.7) -->
 <div class="mask" id="settingsMask">
