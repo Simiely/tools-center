@@ -5,6 +5,25 @@
 /** HTML 转义(防注入) */
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
+/**
+ * 刷新按钮通用交互(2026-08-06):点击后按钮加 spinning(尾部旋转图标 + 禁用防连点),
+ * 请求完成后自动恢复。所有「刷新」类按钮统一走这里。
+ * @param {string} btnId 按钮 id(需在 HTML 中给按钮加 id)
+ * @param {Function} fn 刷新函数(async,完成后恢复按钮)
+ */
+async function btnSpin(btnId, fn) {
+  const btn = $(btnId);
+  if (!btn || btn.disabled) return; // 防连点:进行中忽略再次点击
+  btn.disabled = true;
+  btn.classList.add("spinning");
+  try { await fn(); }
+  catch { /* 刷新函数内部已容错;仅保证按钮恢复 */ }
+  finally {
+    btn.disabled = false;
+    btn.classList.remove("spinning");
+  }
+}
+
 /** 能力名 → 中文标签 */
 function capLabel(c) { return c === "browser" ? "🌐 浏览器" : c === "storage" ? "💾 存储" : c === "network" ? "🌍 网络" : c; }
 

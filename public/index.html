@@ -143,6 +143,10 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
 .btn.primary:hover{background:#ff5722}
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .btn.sm{font-size:11px;padding:5px 12px}
+/* 刷新按钮交互(2026-08-06):点击后尾部出现旋转图标 + 禁用防连点,完成后恢复 */
+@keyframes wbSpin{to{transform:rotate(360deg)}}
+.btn.spinning{pointer-events:none;opacity:.75;cursor:wait}
+.btn.spinning::after{content:"⟳";display:inline-block;margin-left:7px;animation:wbSpin .9s linear infinite;transform-origin:50% 55%}
 .tip{font-size:11px;color:var(--text2);background:var(--bg);border:1px solid var(--line);border-radius:var(--r2);padding:8px 10px;margin-bottom:10px;line-height:1.6}
 .detect{font-size:11px;padding:6px 10px;border-radius:var(--r2);margin-bottom:10px;line-height:1.6;background:var(--surface);border:1px solid var(--line)}
 .detect .d-tag{font-size:10px;padding:1px 7px;border-radius:9px;margin-right:6px;font-weight:500}
@@ -211,7 +215,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="logo"><div class="logo-icon">TC</div><div class="logo-text">Tools Center<span id="meta"> 加载中</span></div></div>
     <div class="hdr-acts">
       <span class="hdr-stat" id="stat">—</span>
-      <button class="sm btn" onclick="load()">刷新</button>
+      <button class="sm btn" id="btnRefresh" onclick="btnSpin('btnRefresh', load)">刷新</button>
       <span class="cap-pill" id="capStatus" onclick="openCapDetail()" title="点击查看能力状态"></span>
       <button class="sm btn" id="btnBackup" onclick="openToolBackup()" title="备份/恢复工具">备份</button>
       <button class="sm btn" id="btnDisk" onclick="openDisk()" title="存储管理(程序/数据分列,大弹窗)">存储</button>
@@ -294,7 +298,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="det-row"><span class="k">端口</span><span class="v" id="detPort">—</span></div>
     <div class="det-row"><span class="k">能力</span><span class="v"><span class="caps" id="detCaps" style="justify-content:flex-start"></span></span></div>
     <div class="det-row"><span class="k">错误</span><span class="v" id="detErr" style="color:var(--bad)">—</span></div>
-    <div class="det-row"><span class="k">日志</span><span class="v"><button class="btn sm" onclick="loadLog()">刷新日志</button></span></div>
+    <div class="det-row"><span class="k">日志</span><span class="v"><button class="btn sm" id="btnLogRefresh" onclick="btnSpin('btnLogRefresh', loadLog)">刷新日志</button></span></div>
     <div class="log-box" id="detLog"><span class="log-empty">加载中…</span></div>
     <div class="det-acts">
       <button class="btn sm" id="detOpen" onclick="openToolDetail()">打开</button>
@@ -349,7 +353,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <div class="tip">备份所有工具(代码+数据)为 zip;删除工具前建议先备份,误删后可恢复。</div>
     <div class="tb-actions" style="display:flex;gap:8px;margin:10px 0">
       <button class="btn primary" onclick="tbCreate()" id="tbCreateBtn">立即备份</button>
-      <button class="btn" onclick="tbRefresh()">刷新列表</button>
+      <button class="btn" id="btnTbRefresh" onclick="btnSpin('btnTbRefresh', tbRefresh)">刷新列表</button>
     </div>
     <div id="tbList" style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px">
       <div class="tip" style="text-align:center;padding:20px">加载中…</div>
@@ -384,7 +388,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
     <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
       <span>🗂️ 存储管理</span>
       <span style="display:flex;gap:8px">
-        <button class="btn" onclick="diskRefresh()">刷新</button>
+        <button class="btn" id="btnDiskRefresh" onclick="btnSpin('btnDiskRefresh', diskRefresh)">刷新</button>
         <button class="btn primary" onclick="openDiskBackup()">备份全部</button>
         <button class="btn" onclick="closeDisk()">✕ 关闭</button>
       </span>
