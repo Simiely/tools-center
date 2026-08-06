@@ -45,10 +45,11 @@ function render() {
     <div class="stat"><div class="s-label">数据占用</div><div class="s-val">${fmtSize(dataSize)}<small>垃圾 ${fmtSize(junkSize)}</small></div></div>
     <div class="stat reclaim"><div class="s-label">⚠️ 数据残留可回收</div><div class="s-val">${fmtSize(reclaim)}<small>${reclaim > 0 ? "程序已删,数据仍在" : "无"}</small></div></div>`;
   if (!diskItems.length) { $("diskList").innerHTML = '<div class="ph">tools/ 目录为空,无残留</div>'; return; }
-  $("diskList").innerHTML = diskItems.map(cardHtml).join("");
+  $("diskList").innerHTML = diskItems.map(diskCardHtml).join("");
 }
 
-function cardHtml(i) {
+// 注意:命名带 disk 前缀——与 cards.js 的 cardHtml(首页工具卡片)重名会覆盖,导致首页卡片渲染错乱
+function diskCardHtml(i) {
   const typeTxt = i.type ? (i.type === "link" ? "link" : "app" + (i.port ? " :" + i.port : "")) : "—";
   const progCol = `
     <div class="tc-col prog">
