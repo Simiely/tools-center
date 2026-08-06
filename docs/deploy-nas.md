@@ -87,6 +87,12 @@ services:
       - xxx:/app/data
       # （可选）独立工具仓库直接挂载：工具代码保持独立 git 维护，平台以 app 型托管
       # xxx = 工具仓库在 NAS 上的路径，如 /mnt/usb2/Configs/workbuddy-credits-tool
+      # ⚠️ 警告（v0.11.2 实测教训）：独立仓库作为嵌套挂载点挂到 /app/tools/<id>，
+      #   平台无法删除挂载点目录（Docker 层锁定，EBUSY），且无 manifest 时会显示为"幽灵目录"，
+      #   出现"删了又出现"的现象（需在宿主机删挂载源 + 改 compose 才能彻底清除）。
+      #   更推荐的接入方式：把工具 clone 到宿主 tools 主目录下作为普通子目录
+      #   （git clone ... /mnt/usb2/Configs/tools-center/tools/wb-credits），
+      #   平台可正常管理（热更新、删除、备份）。
       # - xxx:/app/tools/wb-credits
     restart: unless-stopped
     # Dpanel "更新" = restart，不加 pull_policy 不拉新镜像
@@ -184,13 +190,23 @@ NAS 上的 headless Chromium 不便扫码登录，**需登录的工具建议放 
 
 ## 6. 升级
 
+### 平台自身升级（必须拉镜像）
+
 ```bash
 cd /path/to/tools-center  # 或 NAS 共享目录
 docker compose pull        # 拉取新镜像
 docker compose up -d       # 重启（数据卷保留）
 ```
 
-工具代码独立维护的不受影响（自己的 git pull）。
+> **为什么不能"热更新"？** Docker 镜像层不可变，平台代码（`/app/lib`、`/app/public`）在构建时焊死，更新平台必须重拉镜像 + 重建容器（中断约 10-30 秒）。这是所有容器化应用的通用机制。
+> **升级确认**：页面底部显示版本号（`Tools Center vX.Y.Z`，v0.11.1+），升级后版本号变化即确认生效。
+
+### 工具升级（热更新，无需动容器）
+
+工具代码在**挂载卷**（不在镜像内），改文件即生效：
+- 网页「+ 添加」/ Git 导入 / 上传 zip → 平台自动重扫 + 重启工具进程
+- 手动 `git pull` 到宿主 `tools/<id>/` 目录 → 刷新页面自动生效
+- **工具代码独立维护的不受影响**
 
 ## 7. 故障排查
 

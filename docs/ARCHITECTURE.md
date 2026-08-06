@@ -166,15 +166,17 @@ HTML 响应注入 __BASE__ = /tool/<id>(子路径挂载)
 ### 工具数据目录（存储能力）
 
 ```
-tools/<id>/            ← 代码 + manifest(挂载卷)
+tools/<id>/            ← 代码 + manifest(挂载卷;⚠️ 独立仓库 bind mount 挂载点平台无法删除,见 deploy-nas 警告)
 data/tools/<id>/       ← 工具数据(CAP_STORAGE_DIR 指向这里,备份边界)
 data/backups/<ts>/     ← 本地备份(含 _manifest.json 快照)
 data/logs/<id>.log     ← 滚动日志(按天,保留7天)
 data/admin-pass.json   ← 管理员密码摘要(不存在 = 无密码)
-data/removed-tools.json← 已解除托管工具 id(扫描跳过,物理目录保留)
+data/removed-tools.json← 已解除托管工具 id(扫描跳过,物理目录保留;清理失败也会写入——v0.11.2 起)
 data/paused-tools.json ← 已暂停工具 id(不自动启动/拉起)
 data/webdav.json       ← WebDAV 配置
 ```
+
+> **挂载点边界(v0.11.2)**:`tools/` 下若存在 Docker bind mount 挂载点(如独立工具仓库挂到 `/app/tools/<id>`),平台 `scanDisk` 以 `mount` 字段标记;该目录**无法被平台删除**(容器内 EBUSY),清理失败会写入 removed 标记 + 返回"需在宿主机处理"提示,不再反复识别为幽灵。
 
 ### 能力注入环境变量
 
