@@ -2,6 +2,16 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.11.6 (2026-08-06) · 存储管理两列化(程序/数据/垃圾分列 + 独立页)
+
+- **数据识别引擎**:`classifyDirFiles` 三分类(程序/数据/垃圾)——通用规则(`*.db*` SQLite 三件套连带、`data/ logs/ uploads/` 目录、`.env` 等)+ 工具 `tool.json` `dataFiles` 声明(glob)叠加;`tool.json/manifest.json/package.json` 等程序核心**硬保护永不归数据**;`upload.zip`/`.tmp-*` 归垃圾
+- **scanDisk 扩展**:每项输出 程序/数据/垃圾 体积(递归统计)+ 数据文件清单 + `dataAlone` 残留标注(程序已删数据仍在)
+- **独立页 `/disk.html`**(新窗口):两列卡片(程序列 | 数据列),数据明细、残留可回收统计、一键「备份全部」;首页「存储」按钮改新窗口,旧弹窗退役(disk.js 删除)
+- **安全**:删除工具/清理目录/**清理数据**前自动备份(toolbackup → `data/backups/`,可还原);清理数据前二次确认列出文件;托管中工具清理数据自动"停进程→删→重启"
+- **zip 覆盖升级保留数据**:升级工具时数据文件先暂存、程序替换后放回(升级不清数据)
+- 新 API:`POST /api/admin/disk/clean-data`(只删数据,密码保护)
+- 测试 +6(三分类/声明叠加/dataAlone/cleanDataFiles/防穿越/升级保留),全量 61/61;积分工具 tool.json 声明 dataFiles
+
 ## v0.11.5 (2026-08-06) · 导入进度条(异步任务化,不再干等)
 
 - `POST /api/tools/import` 异步化:zip 链接 / Git 仓库导入立即返回 `202 + taskId`(不再阻塞请求数十秒),后台执行 下载→解压/克隆→创建→启动

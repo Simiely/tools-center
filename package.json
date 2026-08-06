@@ -1,6 +1,6 @@
 {
   "name": "tools-center",
-  "version": "0.11.5",
+  "version": "0.11.6",
   "description": "Tools Center V2:统一运行时 + 可插拔能力模块 + 声明式工具插件",
   "private": true,
   "type": "module",

@@ -49,6 +49,11 @@ const apiDisk = {
     if (!j.ok) throw new Error(j.error);
     return j;
   },
+  cleanData: async (dir, pass) => {
+    const j = await (await fetch("/api/admin/disk/clean-data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dir, pass }) })).json();
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
 };
 
 /** 读取工具日志 */

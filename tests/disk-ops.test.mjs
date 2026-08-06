@@ -154,3 +154,119 @@ test("scanDisk:独立挂载点目录标记 mount(需宿主层处理)", () => {
   assert.equal(it.mount, false, "普通目录不应误报为挂载点");
   assert.equal(it.kind, "ghost", "无 manifest 目录应为幽灵");
 });
+
+// ================= 程序/数据/垃圾 三分类 + cleanDataFiles(2026-08-06) =================
+
+function writeDataTool(id, port, dataFiles) {
+  const dir = path.join(process.env.TOOLS_DIR, id);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "tool.json"), JSON.stringify({
+    id, name: id, type: "app", cmd: ["node", "server.mjs"], port,
+    ...(dataFiles ? { dataFiles } : {}),
+  }), "utf8");
+  fs.writeFileSync(path.join(dir, "server.mjs"), "// x", "utf8");
+  fs.mkdirSync(path.join(dir, "data"), { recursive: true });
+  // 数据:SQLite 三件套 + data/ 目录
+  fs.writeFileSync(path.join(dir, "credits.db"), "db", "utf8");
+  fs.writeFileSync(path.join(dir, "credits.db-wal"), "wal", "utf8");
+  fs.writeFileSync(path.join(dir, "credits.db-shm"), "shm", "utf8");
+  fs.writeFileSync(path.join(dir, "data", "history.json"), "{}", "utf8");
+  // 垃圾:upload.zip
+  fs.writeFileSync(path.join(dir, "upload.zip"), "zz", "utf8");
+  // 程序核心(硬保护)
+  fs.writeFileSync(path.join(dir, "package.json"), "{}", "utf8");
+  return dir;
+}
+
+test("classifyDirFiles:数据/垃圾/程序三分类正确(SQLite 三件套连带,硬保护)", () => {
+  const dir = writeDataTool("data-tool", 8160);
+  const cls = disk.classifyDirFiles(dir, []);
+  const rels = cls.data.map(f => f.rel);
+  assert.ok(rels.includes("credits.db"), "db 应归数据");
+  assert.ok(rels.includes("credits.db-wal"), "wal 应连带归数据");
+  assert.ok(rels.includes("credits.db-shm"), "shm 应连带归数据");
+  assert.ok(rels.includes("data/history.json"), "data/ 目录文件应归数据");
+  assert.ok(cls.dataSize > 0, "dataSize > 0");
+  assert.ok(cls.junk.some(f => f.rel === "upload.zip"), "upload.zip 应归垃圾");
+  assert.ok(cls.junkSize > 0, "junkSize > 0");
+  assert.ok(cls.progSize > 0, "progSize > 0");
+  assert.ok(!rels.includes("tool.json"), "tool.json 永不归数据");
+  assert.ok(!rels.includes("package.json"), "package.json 永不归数据");
+});
+
+test("classifyDirFiles:工具声明 dataFiles 叠加识别", () => {
+  const dir = writeDataTool("declared-tool", 8161, ["custom.dat", "*.cfg"]);
+  fs.writeFileSync(path.join(dir, "custom.dat"), "c", "utf8");
+  fs.writeFileSync(path.join(dir, "app.cfg"), "c", "utf8");
+  const cls = disk.classifyDirFiles(dir, ["custom.dat", "*.cfg"]);
+  const rels = cls.data.map(f => f.rel);
+  assert.ok(rels.includes("custom.dat"), "声明的 dataFiles 应识别为数据");
+  assert.ok(rels.includes("app.cfg"), "声明 glob 应识别为数据");
+});
+
+test("scanDisk:输出三分类字段 + dataAlone 残留标注", () => {
+  writeDataTool("alone-tool", 8162, ["*.db*", "wb-*.json"]);
+  registry.scanTools(); // 先扫描注册表(scanDisk 依赖 getTool)
+  const items = disk.scanDisk();
+  const it = items.find(i => i.dir === "alone-tool");
+  assert.ok(it, "alone-tool 应出现在清单");
+  assert.equal(it.kind, "managed");
+  assert.ok(it.dataSize > 0, "dataSize > 0");
+  assert.ok(it.progSize > 0, "progSize > 0");
+  assert.ok(it.junkSize > 0, "junkSize > 0");
+  assert.ok(Array.isArray(it.dataFiles) && it.dataFiles.length >= 4, "dataFiles 清单应含 db 三件套等");
+  assert.equal(it.dataAlone, false, "托管中工具不算数据残留");
+  // 解除托管后:数据残留应标注(与真实删除流程一致:标记 + 重扫)
+  lifecycle.markRemoved("alone-tool");
+  registry.scanTools();
+  const items2 = disk.scanDisk();
+  const it2 = items2.find(i => i.dir === "alone-tool");
+  assert.equal(it2.kind, "removed", "标记后应为已解除托管");
+  assert.equal(it2.dataAlone, true, "程序已删但数据仍在 → dataAlone");
+  lifecycle.restoreTool("alone-tool");
+});
+
+test("cleanDataFiles:只删数据,保留程序核心", () => {
+  const dir = writeDataTool("clean-tool", 8163, ["*.db*", "wb-*.json"]);
+  const r = disk.cleanDataFiles("clean-tool");
+  assert.ok(r.removed.length >= 4, "应删除 db 三件套 + data/history.json,实际 " + r.removed.length);
+  assert.ok(!fs.existsSync(path.join(dir, "credits.db")), "credits.db 已删");
+  assert.ok(!fs.existsSync(path.join(dir, "credits.db-wal")), "wal 已删");
+  assert.ok(!fs.existsSync(path.join(dir, "data", "history.json")), "data/history.json 已删");
+  assert.ok(fs.existsSync(path.join(dir, "server.mjs")), "程序 server.mjs 保留");
+  assert.ok(fs.existsSync(path.join(dir, "tool.json")), "tool.json 保留(硬保护)");
+  assert.ok(fs.existsSync(path.join(dir, "package.json")), "package.json 保留(硬保护)");
+  assert.ok(fs.existsSync(path.join(dir, "upload.zip")), "垃圾文件不属于数据,保留");
+});
+
+test("cleanDataFiles:防路径穿越(非法目录名)", () => {
+  const r = disk.cleanDataFiles("../evil");
+  assert.match(r.error, /非法目录名/);
+});
+
+test("zipToTool:覆盖升级保留数据文件(程序替换,数据放回)", async () => {
+  // 旧工具:声明 dataFiles + 真实数据
+  const oldDir = writeDataTool("upgrade-tool", 8164, ["*.db*", "wb-*.json"]);
+  registry.scanTools();
+  // 新版本代码(zip 内):同 id 的 tool.json + 更新的 server.mjs,不含数据文件
+  const newSrc = fs.mkdtempSync(path.join(os.tmpdir(), "up-src-"));
+  fs.writeFileSync(path.join(newSrc, "tool.json"), JSON.stringify({
+    id: "upgrade-tool", name: "upgrade-tool", type: "app", cmd: ["node", "server.mjs"], port: 8164,
+    dataFiles: ["*.db*", "wb-*.json"],
+  }), "utf8");
+  fs.writeFileSync(path.join(newSrc, "server.mjs"), "// v2 upgraded", "utf8");
+  const { zipPackDir } = await import("../lib/core/zip.js");
+  const { zipToTool } = await import("../lib/routes/tools-files.js");
+  const buf = zipPackDir(newSrc, "toolRoot");
+  const out = await zipToTool(buf, "upgrade.zip");
+  assert.equal(out.body.ok, true, "升级应成功: " + (out.body.error || ""));
+  // 数据保留
+  assert.ok(fs.existsSync(path.join(oldDir, "credits.db")), "升级后 credits.db 应保留");
+  assert.ok(fs.existsSync(path.join(oldDir, "credits.db-wal")), "升级后 wal 应保留");
+  assert.ok(fs.existsSync(path.join(oldDir, "data", "history.json")), "升级后 data/history.json 应保留");
+  // 程序更新
+  assert.equal(fs.readFileSync(path.join(oldDir, "server.mjs"), "utf8"), "// v2 upgraded", "server.mjs 应为新版");
+  // 数据声明(新 tool.json)仍生效 → 后续可清理
+  const after = disk.classifyDirFiles(oldDir, ["*.db*", "wb-*.json"]);
+  assert.ok(after.data.some(f => f.rel === "credits.db"), "升级后数据仍被识别");
+});

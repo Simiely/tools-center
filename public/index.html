@@ -167,7 +167,7 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
       <button class="sm btn" onclick="load()">刷新</button>
       <span class="cap-pill" id="capStatus" onclick="openCapDetail()" title="点击查看能力状态"></span>
       <button class="sm btn" onclick="openToolBackup()" title="备份/恢复工具">备份</button>
-      <button class="sm btn" onclick="openDiskMgr()" title="查看磁盘残留并清理">存储</button>
+      <button class="sm btn" onclick="window.open('/disk.html','_blank')" title="存储管理(独立页:程序/数据分列)">存储</button>
       <button class="sm btn" onclick="openPass()" title="修改管理员密码">密码</button>
       <button class="sm btn primary" onclick="openAdd()">+ 添加</button>
     </div>
@@ -323,30 +323,12 @@ body{background:var(--bg);color:var(--text);font-family:"SF Pro Display","Segoe 
   </div>
 </div>
 
-<!-- 存储管理弹窗:磁盘残留清单(注册表看不见的垃圾) -->
-<div class="mask" id="diskMask">
-  <div class="modal" style="max-width:640px">
-    <h2>存储管理</h2>
-    <div class="tip">列出 tools/ 目录下所有内容(含已解除托管、无 manifest 的幽灵目录、无效配置)。勾选后可清理;已解除托管可恢复。清理需管理员密码。</div>
-    <div class="disk-actions" style="display:flex;gap:8px;margin:10px 0">
-      <button class="btn" onclick="diskRefresh()">刷新</button>
-      <button class="btn danger" onclick="diskCleanSelected()" id="diskCleanBtn" disabled>清理所选</button>
-      <span id="diskStats" style="font-size:11px;color:var(--text3);align-self:center"></span>
-    </div>
-    <div id="diskList" style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px">
-      <div class="tip" style="text-align:center;padding:20px">加载中…</div>
-    </div>
-    <div class="acts" style="margin-top:10px">
-      <button class="btn" onclick="closeDiskMgr()">关闭</button>
-    </div>
-  </div>
-</div>
+<!-- 存储管理已改为独立页 /disk.html(程序/数据两列,2026-08-06),见 public/disk.html -->
 
 <script src="/js/api.js"></script>
 <script src="/js/ui.js"></script>
 <script src="/js/cards.js"></script>
 <script src="/js/detail.js"></script>
-<script src="/js/disk.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>
