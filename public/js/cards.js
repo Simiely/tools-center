@@ -8,9 +8,13 @@ function renderTabs() {
   // 单分类自动隐藏分类 tab(2026-08-06):所有工具同属一个分类时只留「全部」,避免"全部+唯一分类"冗余;≥2 个分类才显示
   const showCats = cats.filter(c => c !== "全部").length > 1;
   if (!showCats && activeCat !== "all") { activeCat = "all"; renderCards(); }
+  // 单能力自动隐藏能力 tab(2026-08-08):能力是"环境需求"不是"业务分类",只有 1 个能力时顶部不展示,避免"全部+💾"冗余;
+  // 工具卡片/详情的能力徽标(cap-chip)不受影响,仍照常显示
+  const showCaps = caps.length > 1;
+  if (!showCaps && activeCap) { activeCap = ""; renderCards(); }
   $("tabs").querySelector(".tabs-inner").innerHTML =
     `<button class="tab ${activeCat === "all" && !activeCap ? "on" : ""}" data-cat="all" data-cap="" onclick="setCat('all','')">全部</button>` +
-    caps.map(c => `<button class="tab ${activeCap === c ? "on" : ""}" data-cap="${esc(c)}" onclick="setCat('', this.dataset.cap)">${esc(capLabel(c))}</button>`).join("") +
+    (showCaps ? caps.map(c => `<button class="tab ${activeCap === c ? "on" : ""}" data-cap="${esc(c)}" onclick="setCat('', this.dataset.cap)">${esc(capLabel(c))}</button>`).join("") : "") +
     (showCats ? cats.filter(c => c !== "全部").map(c => `<button class="tab ${activeCat === c ? "on" : ""}" data-cat="${esc(c)}" onclick="setCat(this.dataset.cat,'')">${esc(c)}</button>`).join("") : "");
 }
 
