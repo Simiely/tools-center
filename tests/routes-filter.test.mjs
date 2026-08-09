@@ -37,4 +37,5 @@ test("主干路由恒在(工具托管/静态/设置)", () => {
   assert.ok(paths.some(p => p === "/api/admin/settings"), "settings 恒在(关 auth 后仍能开回)");
   assert.ok(paths.some(p => p === "/"), "首页恒在");
   assert.ok(paths.some(p => p === "/js/"), "静态 js 恒在");
+  assert.ok(paths.some(p => p === "/favicon.png"), "网站图标路由恒在");
 });
