@@ -167,10 +167,13 @@ async function openDiskBackup() {
 
 /* ---------- 应用信息编辑(v0.12.2:名称/图标/分组/描述;v0.12.6:link 型可改链接,写回 tool.json) ---------- */
 let metaEditingDir = "";
+let metaEditingId = "";
 function openMetaEdit(dir) {
   const i = diskItems.find(x => x.dir === dir);
   if (!i) { toast("未找到应用: " + dir); return; }
+  // 存目录名用于查找回显;提交用 i.id(目录名可能≠id,手动放置的工具目录名只是目录,2026-08-09 走查 P-1)
   metaEditingDir = dir;
+  metaEditingId = i.id || dir;
   $("mName").value = i.name || "";
   $("mIcon").value = i.icon || "🧰";
   $("mGroup").value = i.group || "工具";
@@ -195,7 +198,7 @@ async function saveMeta() {
     // link 型提交链接(后端仅 link 型接受 url;app 型不传)
     const isLink = $("mUrlRow").style.display !== "none";
     if (isLink) patch.url = $("mUrl").value.trim();
-    const j = await apiToolMeta.update(metaEditingDir, patch);
+    const j = await apiToolMeta.update(metaEditingId || metaEditingDir, patch);
     toast("已保存: " + (j.tool && j.tool.name ? j.tool.name : name));
     closeMeta();
     diskRefresh();  // 应用管理列表刷新

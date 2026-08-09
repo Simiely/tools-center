@@ -36,8 +36,8 @@ test("extractFaviconUrl:shortcut icon / apple-touch-icon 也识别", () => {
   );
 });
 
-test("extractFaviconUrl:无 icon 标签时兜底 /favicon.ico", () => {
-  assert.equal(extractFaviconUrl("<html><body>no icon</body></html>", "https://example.com"), "https://example.com/favicon.ico");
+test("extractFaviconUrl:无 icon 标签返回 null(存在性由 fetchFavicon HEAD 校验)", () => {
+  assert.equal(extractFaviconUrl("<html><body>no icon</body></html>", "https://example.com"), null);
 });
 
 test("extractFaviconUrl:空 html / 坏 base 返回 null", () => {

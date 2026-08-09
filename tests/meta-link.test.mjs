@@ -70,3 +70,21 @@ test("scanDisk:link 型 item 带 url 字段回填", () => {
   const appItem = items.find(x => x.id === "appx");
   assert.equal(appItem.url, "", "app 型 url 应为空");
 });
+
+test("P-1 回归:目录名≠id 的手动工具,scanDisk 应同时暴露 id(编辑提交用 id)", () => {
+  // 手动放置:目录名 jelly,工具 id 是 jellyfin(与目录名不同,2026-08-09 走查 P-1)
+  const dir = path.join(process.env.TOOLS_DIR, "jelly");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "tool.json"), JSON.stringify({
+    id: "jellyfin", name: "影音库", type: "link", url: "http://192.168.1.100:8096",
+  }), "utf8");
+  registry.scanTools();
+  const items = disk.scanDisk();
+  const item = items.find(x => x.dir === "jelly");
+  assert.ok(item, "目录 jelly 应出现在 scanDisk");
+  assert.equal(item.dir, "jelly", "dir 是目录名");
+  assert.equal(item.id, "jellyfin", "id 是工具 id(编辑提交必须用 id,不能用 dir)");
+  // 验证用 id 编辑成功(模拟前端 saveMeta 传 metaEditingId)
+  const nt = registry.updateToolMeta("jellyfin", { name: "影音库新" });
+  assert.equal(nt.name, "影音库新", "用 id 编辑成功");
+});
