@@ -4,7 +4,7 @@ let curDetail = null;
 
 function openDetail(t) {
   curDetail = t;
-  $("detIcon").textContent = t.icon || "🔧";
+  $("detIcon").innerHTML = iconHtml(t.icon, "icon-img detail-img");
   $("detName").textContent = t.name;
   $("detId").textContent = t.id;
   $("detType").textContent = t.type === "link" ? "外部跳转" : "托管进程";

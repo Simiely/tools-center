@@ -6,6 +6,23 @@
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 /**
+ * 图标渲染(v0.12.6):icon 支持 emoji 或图片。
+ * 图片识别:http(s):// 或 data:image/ 开头 → 渲染 <img>(容器圆角,见 .icon-img CSS);
+ * 其余按 emoji 文本渲染。注入走 esc 防 XSS。
+ * @param {string} icon tool.json 的 icon 字段
+ * @param {string} [cls] img 附加类名(默认 icon-img,由 CSS 控制尺寸)
+ * @returns {string} 可插入 innerHTML 的片段
+ */
+function iconHtml(icon, cls = "icon-img") {
+  const s = String(icon || "");
+  if (!s) return "🧰";
+  if (/^(https?:\/\/|data:image\/)/.test(s)) {
+    return `<img class="${esc(cls)}" src="${esc(s)}" alt="" loading="lazy" onerror="this.style.display='none'">`;
+  }
+  return esc(s);  // emoji 文本
+}
+
+/**
  * 刷新按钮通用交互(2026-08-06):点击后按钮加 spinning(尾部旋转图标 + 禁用防连点),
  * 并 toast 弹出动作说明;请求完成后自动恢复。所有「刷新」类按钮统一走这里。
  * @param {string} btnId 按钮 id(需在 HTML 中给按钮加 id)

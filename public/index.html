@@ -64,7 +64,8 @@ body::before{
 .card{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:var(--r3);padding:10px 6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;transition:.18s;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,146,146,.75);transform:translateY(-2px)}
 .card:active{transform:translateY(0)}
-.card-icon{width:36px;height:36px;border-radius:10px;background:var(--surface);display:grid;place-items:center;font-size:20px;flex-shrink:0}
+.card-icon{width:36px;height:36px;border-radius:10px;background:var(--surface);display:grid;place-items:center;font-size:20px;flex-shrink:0;overflow:hidden}
+.card-icon .icon-img{width:28px;height:28px;object-fit:contain;border-radius:6px}
 .card-tag{font-size:9px;padding:1px 6px;border-radius:6px;position:absolute;top:6px;right:6px}
 .card-tag.hosted{background:var(--brand-dim);color:var(--brand)}
 .card-tag.link{background:var(--ok)14;color:var(--ok)}
@@ -95,7 +96,8 @@ body::before{
 .cap-chip.network{color:#34d399;border-color:#34d39944;background:#34d39910}
 /* 工具详情弹层 */
 .detail-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.detail-icon{width:52px;height:52px;border-radius:14px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;font-size:26px;flex-shrink:0}
+.detail-icon{width:52px;height:52px;border-radius:14px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;font-size:26px;flex-shrink:0;overflow:hidden}
+.detail-icon .detail-img{width:40px;height:40px;object-fit:contain;border-radius:10px}
 .detail-title{flex:1;min-width:0}
 .detail-title h2{font-size:16px;font-weight:600;word-break:break-word}
 .detail-title .d-sub{font-size:11px;color:var(--text2);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}

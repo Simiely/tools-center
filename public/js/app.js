@@ -248,7 +248,21 @@ async function saveAdd() {
   if (mode === "app" && !spec.name) { toast("请填写名称,或输入 URL / 拖入 zip"); return; }
   adding = true;
   try {
-    const j = mode === "link" ? await apiCreate({ name: spec.name, type: "link", url: spec.url }) : await apiCreate(spec);
+    let j;
+    if (mode === "link") {
+      const body = { name: spec.name, type: "link", url: spec.url };
+      if (spec.icon) body.icon = spec.icon;               // 用户手填了图标 → 直接用
+      else {                                               // 未填 → 自动抓目标站 favicon(v0.12.6)
+        try {
+          const r = await fetch("/api/favicon?url=" + encodeURIComponent(spec.url), { cache: "no-store" });
+          const fj = await r.json();
+          if (fj && fj.ok && fj.icon) { body.icon = fj.icon; toast("已自动抓取网站图标"); }
+        } catch {}  // 抓取失败静默降级(仍创建,无图标)
+      }
+      j = await apiCreate(body);
+    } else {
+      j = await apiCreate(spec);
+    }
     closeAdd();
     resetAddForm();
     toast("已创建"); load();

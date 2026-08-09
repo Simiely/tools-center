@@ -38,4 +38,5 @@ test("主干路由恒在(工具托管/静态/设置)", () => {
   assert.ok(paths.some(p => p === "/"), "首页恒在");
   assert.ok(paths.some(p => p === "/js/"), "静态 js 恒在");
   assert.ok(paths.some(p => p === "/favicon.png"), "网站图标路由恒在");
+  assert.ok(paths.some(p => p === "/api/favicon"), "favicon 抓取接口恒在(v0.12.6)");
 });

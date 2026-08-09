@@ -2,6 +2,17 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.12.7 (2026-08-09) · icon 支持图片 + link 自动抓取网站图标
+
+### 功能
+- **icon 支持图片**(v0.12.7):icon 字段识别 `http(s)://` / `data:image/` 开头 → 卡片/详情渲染 `<img>`(圆角容器,emoji 兼容);`iconHtml()` 统一入口(ui.js),XSS 走 esc
+- **link 快捷方式自动抓图标**:添加 link 时未手填图标 → 自动调 `GET /api/favicon?url=`,抓取目标站 favicon(① 解析首页 `<link rel=icon>` ② 兜底 `/favicon.ico` HEAD 校验),失败静默降级(仍创建)
+- 后端新增 `lib/core/favicon.js`(`fetchFavicon`/`extractFaviconUrl`/`safeBase`,Node 原生 fetch + 4s 超时,零依赖)
+
+### 验证
+- 新增 tests/favicon.test.mjs(8 例:origin 解析/绝对/相对/相对协议/兜底/非法);全量 88/88 通过
+- 端到端:GitHub → fluidicon.png(HTML 解析),Baidu → /favicon.ico(兜底);非法 url 400
+
 ## v0.12.6 (2026-08-09) · link 型快捷方式支持修改链接
 
 ### 功能

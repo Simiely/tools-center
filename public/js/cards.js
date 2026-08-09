@@ -47,7 +47,7 @@ function cardHtml(t) {
     <span class="card-tag ${t.type === "app" ? "hosted" : "link"}">${t.type === "app" ? "托管" : "链接"}</span>
     ${ctlBtns}
     <button class="info-btn" data-id="${esc(t.id)}" title="详情">&#8505;</button>
-    <div class="card-icon">${esc(t.icon || "🧰")}</div>
+    <div class="card-icon">${iconHtml(t.icon)}</div>
     <div class="card-name">${esc(t.name)}</div>
     <div class="card-desc">${esc(t.desc || "")}</div>
     ${caps ? `<div class="caps">${caps}</div>` : ""}
