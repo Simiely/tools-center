@@ -418,7 +418,7 @@ body::before{
   </div>
 </div>
 
-<!-- 应用信息编辑弹窗(v0.12.2:名称/图标/分组/描述,写回 tool.json) -->
+<!-- 应用信息编辑弹窗(v0.12.2:名称/图标/分组/描述;v0.12.6:link 型可改链接,写回 tool.json) -->
 <div class="mask" id="metaMask">
   <div class="modal">
     <h2>✏️ 编辑应用信息</h2>
@@ -427,6 +427,7 @@ body::before{
     <div class="frow"><label>图标</label><input class="finput" id="mIcon" placeholder="Emoji,如 📦"></div>
     <div class="frow"><label>分组</label><input class="finput" id="mGroup" placeholder="分类标签,如 工具 / 监控"></div>
     <div class="frow" style="align-items:flex-start"><label>描述</label><textarea class="finput" id="mDesc" rows="2" style="resize:vertical" placeholder="一句话说明"></textarea></div>
+    <div class="frow" id="mUrlRow" style="display:none"><label>链接</label><input class="finput" id="mUrl" placeholder="http(s)://…(link 型跳转目标)"></div>
     <div class="acts">
       <button class="btn" onclick="closeMeta()">取消</button>
       <button class="btn primary" id="metaSaveBtn" onclick="saveMeta()">保存</button>

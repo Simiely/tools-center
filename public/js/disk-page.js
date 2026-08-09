@@ -165,7 +165,7 @@ async function openDiskBackup() {
   catch (e) { toast(e.message); }
 }
 
-/* ---------- 应用信息编辑(v0.12.2:名称/图标/分组/描述,写回 tool.json) ---------- */
+/* ---------- 应用信息编辑(v0.12.2:名称/图标/分组/描述;v0.12.6:link 型可改链接,写回 tool.json) ---------- */
 let metaEditingDir = "";
 function openMetaEdit(dir) {
   const i = diskItems.find(x => x.dir === dir);
@@ -175,6 +175,10 @@ function openMetaEdit(dir) {
   $("mIcon").value = i.icon || "🧰";
   $("mGroup").value = i.group || "工具";
   $("mDesc").value = i.desc || "";
+  // link 型(快捷方式)显示链接输入框并回填(v0.12.6);app 型隐藏
+  const isLink = i.type === "link";
+  $("mUrlRow").style.display = isLink ? "" : "none";
+  $("mUrl").value = isLink ? (i.url || "") : "";
   $("metaMask").classList.add("show");
   $("mName").focus();
 }
@@ -185,9 +189,13 @@ async function saveMeta() {
   const btn = $("metaSaveBtn");
   btn.disabled = true;
   try {
-    const j = await apiToolMeta.update(metaEditingDir, {
+    const patch = {
       name, icon: $("mIcon").value.trim(), group: $("mGroup").value.trim(), desc: $("mDesc").value.trim(),
-    });
+    };
+    // link 型提交链接(后端仅 link 型接受 url;app 型不传)
+    const isLink = $("mUrlRow").style.display !== "none";
+    if (isLink) patch.url = $("mUrl").value.trim();
+    const j = await apiToolMeta.update(metaEditingDir, patch);
     toast("已保存: " + (j.tool && j.tool.name ? j.tool.name : name));
     closeMeta();
     diskRefresh();  // 应用管理列表刷新
