@@ -18,7 +18,7 @@ async function load() {
   } catch (e) { $("main").innerHTML = `<div class="empty"><div class="empty-icon">!</div><p>${e.message}</p></div>`; }
 }
 
-/** 底部版本号:读 /api/version(镜像内 package.json),显示 "Tools Center v0.11.x" */
+/** 底部版本号:读 /api/version(镜像内 package.json),显示 "软件工具集 v0.11.x" */
 async function loadVersion() {
   try {
     const j = await (await fetch("/api/version", { cache: "no-store" })).json();
