@@ -9,6 +9,10 @@
 - **link 快捷方式自动抓图标**:添加 link 时未手填图标 → 自动调 `GET /api/favicon?url=`,抓取目标站 favicon(① 解析首页 `<link rel=icon>` ② 兜底 `/favicon.ico` HEAD 校验),失败静默降级(仍创建)
 - 后端新增 `lib/core/favicon.js`(`fetchFavicon`/`extractFaviconUrl`/`safeBase`,Node 原生 fetch + 4s 超时,零依赖)
 
+### 修复(场景走查 2026-08-09)
+- **P-1 目录名≠id 工具编辑失败**:scanDisk 按目录名查注册表(id 索引),手动放置且目录名≠id 的工具被误标 invalid、应用管理编辑报「工具不存在」——新增 byDir 目录名索引 + getToolByDir,scanDisk 双通道查询,前端编辑提交用 i.id
+- **P-2 favicon 死链**:extractFaviconUrl 无 icon 声明恒返回 /favicon.ico,致 fetchFavicon ② HEAD 校验死代码——改为无声明返回 null,存在性由 HEAD 校验决定
+
 ### 验证
 - 新增 tests/favicon.test.mjs(8 例:origin 解析/绝对/相对/相对协议/兜底/非法);全量 88/88 通过
 - 端到端:GitHub → fluidicon.png(HTML 解析),Baidu → /favicon.ico(兜底);非法 url 400
