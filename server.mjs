@@ -38,6 +38,6 @@ server.on("upgrade", (req, socket, head) => {
 });
 
 server.listen(parseInt(process.argv[2], 10) || CONFIG.PORT, "0.0.0.0", () => {
-  console.log(`Tools Center 已启动: http://127.0.0.1:${parseInt(process.argv[2], 10) || CONFIG.PORT}`);
+  console.log(`软件工具集已启动: http://127.0.0.1:${parseInt(process.argv[2], 10) || CONFIG.PORT}`);
   console.log(`工具目录: ${DIRS.tools}`);
 });
