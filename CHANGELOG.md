@@ -2,6 +2,48 @@
 
 > 版本变更记录。按版本分节,不拆分。
 
+## v0.13.1 (2026-08-13) · 首页卡片分组拖拽排序 + 自动保存
+
+### 功能
+- **分组/卡片拖拽排序**:拖动分组标题重排分组顺序;拖动卡片组内排序;卡片拖到其他分组 = 修改工具分组(复用 `POST /api/tools/meta`,写回 tool.json,应用管理/分类 tab 同步)
+- **自动保存**:拖动结束防抖 500ms 自动 `POST /api/ui-order` 持久化到 `data/ui-order.json`,刷新页面顺序保持
+- 顺序数据与工具声明解耦:UI 偏好存平台数据目录,不写回 tool.json(拖动不触发工具重扫)
+- 新组/新工具自动排后;删工具后渲染忽略失效 id,不崩
+- **窄屏适配**(≤500px):顶栏 flex-wrap 换行、能力指示器/logo 副标题隐藏,366px 不再挤成竖排单字
+
+### 实现
+- 后端:`lib/core/ui-order.js`(load/save/校验,容量上限 64KB)+ `lib/routes/ui-order.js`(GET/POST,主干免密——UI 偏好低危+拖动高频,与"密码只保护敏感写面"原则一致)
+- 前端:**SortableJS v1.15.7 引擎**(`public/js/vendor/sortable.min.js`,MIT,45KB,零依赖单文件,vendor 目录豁免零第三方铁律,注释标注来源/版本/许可);`public/js/dnd.js` ~99 行接入
+- 拖拽体验:组间拖动(handle 标题)、同组排序、跨组拖=改分组(group:"tools" 共享组)、FLIP 让位动画(animation:100)、卡片本体跟手(forceFallback 半透明,`transition:none` 防滞后)
+- 空组可拖入:`.grid:empty` 96px 虚线占位区 + 占位文案;groupOrder 记录的空组刷新后保留
+- cards.js 渲染应用顺序(组按 groupOrder、组内按 toolOrder);api.js 加 apiUiOrder;app.js 加载时拉取
+- 顶部分类 tab 顺序与分组顺序同源(都读 groupOrder),拖组后 tab 同步
+
+### 验证
+- 新增 tests/ui-order.test.mjs(7 例:规整/过滤/往返/超限/损坏容错);全量 104/104
+- 端到端:GET 空 → POST 保存 → 回读一致;playwright 真实鼠标序列验证组拖/卡拖/跨组 + 刷新保持
+- 拖拽实现细节与踩坑(transition 拖慢拖图、scale 位移偏差、空组落点)见 [`docs/drag-drop.md`](docs/drag-drop.md)
+
+## v0.13.0 (2026-08-13) · 安全加固 + 架构收敛 + 卫生项修复
+
+### 安全
+- **POST /api/tools 加密码门**(passOk):设置密码后无凭证创建工具返回 403,封堵"任意 cmd 数组 = RCE"面(此前仅 import/files 有门)
+- **密码哈希升级**:无盐 sha256 → scrypt + 16B 随机盐(OWASP 要求);旧 {hash:sha256} 记录校验通过自动升级为 v:2 格式,零手动迁移
+- **favicon SSRF 防护**:抓取前 DNS 校验目标 IP,拦截私网/环回/链路本地/云 metadata/保留地址(CWE-918);新增 isPrivateIp/safeTargetUrl
+
+### 架构
+- 路由按职责拆分:tools-files(上传)/ tools-import(在线导入)/ tools-logs(日志)
+- **/api/logs 独立为主干组**:关闭 import 模块后日志读取不再 404(此前被整组连带过滤)
+- healthCheck 改 Promise.all 并行:N 个 down 工具最坏耗时 3s(原 N×3s)
+- 删除 enabledModules() 死代码
+
+### 卫生
+- 备份保留策略 CONFIG.BACKUP_KEEP=10:数据备份目录与工具备份 zip 各自只留最近 10 份
+- restoreFromZip 恢复前清理同 id 旧 .pre-restore-* 残留目录(防幽灵目录堆积)
+
+### 验证
+- 测试 89 → 97(新增 auth scrypt 4 例 + favicon SSRF 4 例);端到端 ②③⑦⑨⑩ 全绿
+
 ## v0.12.7 (2026-08-09) · icon 支持图片 + link 自动抓取网站图标
 
 ### 功能

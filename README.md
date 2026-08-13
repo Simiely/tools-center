@@ -2,7 +2,7 @@
 
 把你写的各种轻量小工具(积分仪表盘、购书工作台、脚本服务…)以 **"放目录 + 写 `manifest.json`"** 的方式统一挂载到一个入口,统一托管进程,常驻在你的 NAS 上。
 
-> **当前状态:v0.11.0**——统一运行时 + 可插拔能力模块 + 声明式工具插件 + 内置存储管理。详见 [`CHANGELOG.md`](CHANGELOG.md) 与 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+> **当前状态:v0.13.1**——统一运行时 + 可插拔能力模块 + 声明式工具插件 + 内置存储管理 + 首页拖拽排序。详见 [`CHANGELOG.md`](CHANGELOG.md) 与 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
 
 ## 核心特性
 
@@ -14,6 +14,7 @@
 - **内置存储管理**:顶栏「存储」— 磁盘残留(幽灵目录/无效配置/解除托管)分类可视,勾选批量清理,一键恢复托管
 - **三种添加方式**:网页表单 / zip 上传(自动解压+炸弹防护) / Git 仓库导入;添加防重复提交
 - **数据安全**:内置本地备份 + WebDAV 云同步;管理员密码可选(空 = 无密码,敏感操作仍需确认)
+- **首页拖拽排序**:分组/卡片随意拖(组间排序、组内排序、跨组拖=改分组),FLIP 平滑动画 + 卡片跟手,顺序自动保存到 `data/ui-order.json`,刷新保持
 - **轻量到底**:Node 零依赖内核、单容器、低资源占用;本机/Docker/NAS 三模式
 
 ## 快速开始
@@ -43,6 +44,7 @@ docker compose up -d           # http://localhost:2626
 | [`docker-compose.nas.example.yml`](docker-compose.nas.example.yml) | 部署者 | **NAS 完整部署配置模板**(隐私路径 `/path/to/xxxx` 占位,复制替换即用) |
 | [`docs/sdk.md`](docs/sdk.md) | 工具作者 | **工具 SDK**(capBrowser/capStorageDir/懒加载机制) |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | 所有人 | **未来规划**:AI 能力接入(DeepSeek)、工具隔离、测试补强等已确认方向 |
+| [`docs/drag-drop.md`](docs/drag-drop.md) | 前端/未来的你 | **拖拽排序方案**:SortableJS 接入全记录 + 跟手调试踩坑(可复用) |
 | [`templates/tool-template/`](templates/tool-template/) | 工具作者 | **最小可运行模板**(manifest + server.mjs + README) |
 | [`AGENTS.md`](AGENTS.md) | AI / 未来的你 | 技术栈、关键坑、约定、常用命令 |
 | [`DEVELOPMENT.md`](DEVELOPMENT.md) | 开发者 | 项目概览、历史架构说明 |
@@ -67,8 +69,8 @@ docker compose up -d           # http://localhost:2626
 ## 测试
 
 ```bash
-npm test          # 单元测试(node:test,零依赖,50 用例)
-npm run check     # 全模块语法检查(39 文件)
+npm test          # 单元测试(node:test,零依赖,104 用例)
+npm run check     # 全模块语法检查(41 文件)
 ```
 
 ## 技术栈

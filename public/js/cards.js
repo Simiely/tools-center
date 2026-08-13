@@ -1,6 +1,18 @@
-// public/js/cards.js - 工具列表渲染(分组/分类过滤/卡片 HTML)
+// public/js/cards.js - 工具列表渲染(分组/分类过滤/卡片 HTML + UI 排序应用)
 // 依赖: ui.js(esc, capLabel)
+// v0.13.1:uiOrder(分组顺序/组内卡片顺序)由 dnd.js 维护,渲染时应用;渲染后 bindDnd 挂拖拽。
 let tools = [], activeCat = "all", activeCap = "";
+let uiOrder = { groupOrder: [], toolOrder: {} }; // 拖拽排序持久化(api/ui-order)
+
+/** 组内按 uiOrder.toolOrder 排序;未记录的工具保持原顺序排后 */
+function sortByOrder(arr, orderedIds) {
+  const idx = new Map(orderedIds.map((id, i) => [id, i]));
+  return [...arr].sort((a, b) => {
+    const ia = idx.has(a.id) ? idx.get(a.id) : 1e9;
+    const ib = idx.has(b.id) ? idx.get(b.id) : 1e9;
+    return ia - ib;
+  });
+}
 
 function renderTabs() {
   const cats = [...new Set(tools.map(t => t.group || "工具"))];
@@ -12,10 +24,17 @@ function renderTabs() {
   // 工具卡片/详情的能力徽标(cap-chip)不受影响,仍照常显示
   const showCaps = caps.length > 1;
   if (!showCaps && activeCap) { activeCap = ""; renderCards(); }
+  // 分类 tab 跟随拖拽后的分组顺序(v0.13.1):与卡片分组渲染同源(uiOrder.groupOrder)
+  const groupIdx = new Map(uiOrder.groupOrder.map((g, i) => [g, i]));
+  const orderedCats = cats.filter(c => c !== "全部").sort((a, b) => {
+    const ia = groupIdx.has(a) ? groupIdx.get(a) : 1e9;
+    const ib = groupIdx.has(b) ? groupIdx.get(b) : 1e9;
+    return (ia - ib) || a.localeCompare(b);
+  });
   $("tabs").querySelector(".tabs-inner").innerHTML =
     `<button class="tab ${activeCat === "all" && !activeCap ? "on" : ""}" data-cat="all" data-cap="" onclick="setCat('all','')">全部</button>` +
     (showCaps ? caps.map(c => `<button class="tab ${activeCap === c ? "on" : ""}" data-cap="${esc(c)}" onclick="setCat('', this.dataset.cap)">${esc(capLabel(c))}</button>`).join("") : "") +
-    (showCats ? cats.filter(c => c !== "全部").map(c => `<button class="tab ${activeCat === c ? "on" : ""}" data-cat="${esc(c)}" onclick="setCat(this.dataset.cat,'')">${esc(c)}</button>`).join("") : "");
+    (showCats ? orderedCats.map(c => `<button class="tab ${activeCat === c ? "on" : ""}" data-cat="${esc(c)}" onclick="setCat(this.dataset.cat,'')">${esc(c)}</button>`).join("") : "");
 }
 
 function setCat(c, cap) { activeCat = c; activeCap = cap; renderTabs(); renderCards(); }
@@ -28,8 +47,22 @@ function renderCards() {
   window.__tools = filtered;
   const groups = {};
   for (const t of filtered) (groups[t.group || "工具"] = groups[t.group || "工具"] || []).push(t);
-  $("main").innerHTML = Object.entries(groups).map(([g, arr]) =>
-    `<div class="sec"><div class="sec-title">${esc(g)} <span class="count">${arr.length}</span></div><div class="grid">${arr.map(cardHtml).join("")}</div></div>`).join("");
+  // 保留 groupOrder 记录的空组(v0.13.1:跨组拖走最后一张卡后组变空,刷新后仍显示虚线占位可拖回;
+  // 仅在未筛选时补充——分类/能力筛选下空组无工具归属,不显示)
+  if (!activeCat && !activeCap) {
+    for (const g of uiOrder.groupOrder) if (!(g in groups)) groups[g] = [];
+  }
+  // 应用 UI 排序(v0.13.1):组按 groupOrder,组内按 toolOrder;未记录的新组/新工具自动排后
+  const groupIdx = new Map(uiOrder.groupOrder.map((g, i) => [g, i]));
+  const groupNames = Object.keys(groups).sort((a, b) => {
+    const ia = groupIdx.has(a) ? groupIdx.get(a) : 1e9;
+    const ib = groupIdx.has(b) ? groupIdx.get(b) : 1e9;
+    return (ia - ib) || a.localeCompare(b);
+  });
+  $("main").innerHTML = groupNames.map((g) =>
+    `<div class="sec" data-group="${esc(g)}"><div class="sec-title" data-group="${esc(g)}" title="拖动排序分组">${esc(g)} <span class="count">${groups[g].length}</span></div><div class="grid">${sortByOrder(groups[g], uiOrder.toolOrder[g] || []).map(cardHtml).join("")}</div></div>`
+  ).join("");
+  if (typeof bindDnd === "function") bindDnd(); // 渲染后挂拖拽(dnd.js)
 }
 
 function cardHtml(t) {

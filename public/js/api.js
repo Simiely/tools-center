@@ -169,3 +169,13 @@ const apiToolBackup = {
     return j;
   },
 };
+
+/** UI 排序偏好(2026-08-13):首页分组顺序 + 组内卡片顺序,拖动后自动保存 */
+const apiUiOrder = {
+  get: () => getJSON("/api/ui-order"),
+  save: async (order) => {
+    const j = await postJSON("/api/ui-order", { order });
+    if (!j.ok) throw new Error(j.error);
+    return j;
+  },
+};

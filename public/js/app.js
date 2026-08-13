@@ -5,9 +5,13 @@
 /* ---------- 加载工具列表 ---------- */
 async function load() {
   try {
-    const j = await (await fetch("/api/tools", { cache: "no-store" })).json();
+    const [j, oj] = await Promise.all([
+      fetch("/api/tools", { cache: "no-store" }).then(r => r.json()),
+      apiUiOrder.get(), // 拖拽排序偏好(分组顺序/组内卡片顺序,v0.13.1)
+    ]);
     if (!j.ok) throw new Error(j.error);
     tools = (j.tools || []).filter(t => !t.hidden);
+    if (oj && oj.ok && oj.order) uiOrder = oj.order; // cards.js 全局;拖动后自动保存
     renderTabs();
     renderCards();
     const running = tools.filter(t => t.status && t.status.status === "running").length;

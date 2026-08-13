@@ -19,10 +19,11 @@
 5. NAS 部署记得 `PUID/PGID` + `TZ=Asia/Shanghai`(否则容器 root 写卷会 EACCES 权限错)
 6. **子路径挂载**:反代 HTML 自动注入 `window.__BASE__="/tool/<id>"`;`/tool/<id>` 无尾斜杠 301 到带斜杠(相对路径才正确)——改 proxy/server 时别破坏这两条
 7. **删除运行中工具**:必须先 stop 子进程再删目录(Windows EBUSY);新增页面工具需遵守「子路径挂载约定」(相对路径 + `__BASE__` 前缀)
+8. **拖拽排序(v0.13.1,SortableJS)**:引擎在 `public/js/vendor/sortable.min.js`(零依赖单文件,MIT,铁律唯一豁免口);改 dnd/cards 时记住——①被拖元素若有 `transition` 必须 `.s-fallback{transition:none!important}`(否则拖图慢半拍)②**不要给拖图加 scale**(与 Sortable 的 translate 定位叠加产生位移偏差)③空组 `.grid:empty` 要 `min-height` 占位否则拖不进 ④拖后本地重渲染,不要调 load()(防抖 POST 未发出,GET 会读到旧顺序弹回原位)。完整方案见 docs/drag-drop.md
 
 ## 约定
 
-- **零依赖是不可违反的铁律**;业务逻辑进 `lib/`,入口只做组装
+- **零依赖是不可违反的铁律**;业务逻辑进 `lib/`,入口只做组装。**唯一豁免**:`public/js/vendor/` 允许放零依赖单文件第三方库(如 sortable.min.js),必须注释来源/版本/许可证
 - 注释、UI、文档全部中文;模块命名英文
 - 平台与工具**解耦**:工具代码在各自仓库,部署时拷入挂载卷;平台不感知工具内部实现
 - gitignore 注释必须独立成行(行尾 `#` 不生效,会把注释并入 pattern)
