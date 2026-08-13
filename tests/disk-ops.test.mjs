@@ -257,7 +257,7 @@ test("zipToTool:覆盖升级保留数据文件(程序替换,数据放回)", asyn
   }), "utf8");
   fs.writeFileSync(path.join(newSrc, "server.mjs"), "// v2 upgraded", "utf8");
   const { zipPackDir } = await import("../lib/core/zip.js");
-  const { zipToTool } = await import("../lib/routes/tools-files.js");
+  const { zipToTool } = await import("../lib/routes/tools-import.js");
   const buf = zipPackDir(newSrc, "toolRoot");
   const out = await zipToTool(buf, "upgrade.zip");
   assert.equal(out.body.ok, true, "升级应成功: " + (out.body.error || ""));
@@ -287,7 +287,7 @@ test("zipToTool:被 removed 标记(解除托管)的工具可重新导入恢复(�
   assert.equal(registry.getTool("revive-tool"), null, "removed 标记下 scanTools 应跳过该工具");
   // 2. 打包并 zipToTool 重新导入(修复后应自动清除 removed 标记并注册)
   const { zipPackDir } = await import("../lib/core/zip.js");
-  const { zipToTool } = await import("../lib/routes/tools-files.js");
+  const { zipToTool } = await import("../lib/routes/tools-import.js");
   const buf = zipPackDir(dir, "toolRoot");
   const out = await zipToTool(buf, "revive.zip");
   assert.equal(out.body.ok, true, "removed 工具重导入应成功: " + (out.body.error || ""));
