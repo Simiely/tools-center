@@ -4,7 +4,7 @@
 > 任何工具仓库在写 `manifest.json` / `tool.json` 的 `port` 字段前，**必须先查这张表**。
 > 改端口 = 改这张表 + 改对应仓库的声明文件，两处同步，缺一不可。
 
-最后更新：2026-08-29
+最后更新：2026-09-11
 
 ---
 
@@ -30,7 +30,8 @@
 | `8129` | `wb-edge-daemon` | 积分工具浏览器守护进程 | 同上（`legacy/edge-daemon.mjs`，接入时占用） | 保留 |
 | `8130` | `clipboard` | 剪贴板 | [clipboard-tool](https://github.com/Simiely/clipboard-tool) | 在用 |
 | `8132` | `gh-release-center` | 软件下载中心 | [gh-release-center](https://github.com/Simiely/gh-release-center) | 在用（2026-08-29 从 8130 迁入） |
-| `8133 – 8189` | — | **待分配** | — | 空闲 |
+| `8133` | `trae-credits` | TRAE/WorkBuddy 积分仪表盘 | [MultiSwitch/trae-credits-tool](https://github.com/Simiely/MultiSwitch)（`trae-credits-tool` 子目录） | 在用（2026-09-11 自 8123 迁入，让位 wb-credits） |
+| `8134 – 8189` | — | **待分配** | — | 空闲 |
 
 ### 测试端口（同一台机器上跑测试时占用，非工具端口）
 
@@ -66,7 +67,7 @@
 
 ## 四、新工具接入流程
 
-1. 查本表第二节，挑一个 `8133 – 8189` 范围内的空闲端口
+1. 查本表第二节，挑一个 `8134 – 8189` 范围内的空闲端口
 2. 在**本表第二节新增一行**（端口 + 工具 id + 名称 + 仓库链接）
 3. 在工具仓库写 `manifest.json` / `tool.json`，`port` 填同一个值
 4. 工具仓库 README 加「平台版」说明段（见 [仓库内端口标记规范](./仓库内端口标记规范.md)）
