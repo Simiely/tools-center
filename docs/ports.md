@@ -31,7 +31,7 @@
 | `8130` | `clipboard` | 剪贴板 | [clipboard-tool](https://github.com/Simiely/clipboard-tool) | 在用 |
 | `8132` | `gh-release-center` | 软件下载中心 | [gh-release-center](https://github.com/Simiely/gh-release-center) | 在用（2026-08-29 从 8130 迁入） |
 | `8133` | `trae-credits` | TRAE/WorkBuddy 积分仪表盘 | [MultiSwitch/trae-credits-tool](https://github.com/Simiely/MultiSwitch)（`trae-credits-tool` 子目录） | 在用（2026-09-11 自 8123 迁入，让位 wb-credits） |
-| `8134` | `family-calendar` | 家庭日历 | [family-calendar-tool](https://github.com/Simiely/family-calendar-tool) | 在用（2026-09-26 新增） |
+| `8134` | `family-calendar` | 家庭日历 | [item-expiry-reminder](https://github.com/Simiely/item-expiry-reminder) (`platform/` 子目录) | 在用（2026-09-26 新增） |
 | `8151` | `ntfy-admin` | ntfy 管家 | [ntfy-alert](https://github.com/Simiely/ntfy-alert)（`ntfy-admin/` 子目录） | 在用（2026-09-26 新增） |
 | `8135 – 8189` | — | **待分配** | — | 空闲 |
 
