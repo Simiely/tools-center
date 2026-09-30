@@ -58,7 +58,7 @@ docker compose up -d           # http://localhost:2626
 | 工具 | 接入方式 | 说明 |
 |---|---|---|
 | 积分仪表盘 | app | [workbuddy-credits-tool](https://github.com/Simiely/workbuddy-credits-tool) 独立仓库挂载,平台托管进程 |
-| 微信读书购书工作台 | app | weread-budget 服务化(本地开发中) |
+| 微信读书购书工作台 | app | [weread-budget-extension](https://github.com/Simiely/weread-budget-extension) 的 `platform/` 子目录挂载,平台托管进程(端口 8135) |
 | NAS 现有服务(Jellyfin 等) | link | 一张卡片接入 |
 
 > **📌 与本平台的关联(双向标注)**:积分仪表盘([workbuddy-credits-tool](https://github.com/Simiely/workbuddy-credits-tool))是本平台的**完整接入示例**(app 型,`tool.json` 声明,端口 8123,`/api/status` 健康检查):
