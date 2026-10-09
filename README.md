@@ -59,6 +59,7 @@ docker compose up -d           # http://localhost:2626
 |---|---|---|
 | 积分仪表盘 | app | [workbuddy-credits-tool](https://github.com/Simiely/workbuddy-credits-tool) 独立仓库挂载,平台托管进程 |
 | 微信读书购书工作台 | app | **`weread-budget-extension`(私藏仓库)** 的 `platform/` 子目录挂载,平台托管进程(端口 8135) |
+| 家庭日历 | app | **`item-expiry-reminder`(私藏仓库)** 的 `platform/` 子目录挂载,平台托管进程(端口 8134) |
 | 家庭告警推送 | link | **`ntfy-alert`(私藏仓库)** —— 自建 ntfy 推送（1 发送端 + 6 接收端，点对点 + 广播，账号级 ACL 隔离），以 link 卡片接入 |
 | NAS 现有服务(Jellyfin 等) | link | 一张卡片接入 |
 
