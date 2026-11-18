@@ -28,6 +28,13 @@
 - 平台与工具**解耦**:工具代码在各自仓库,部署时拷入挂载卷;平台不感知工具内部实现
 - gitignore 注释必须独立成行(行尾 `#` 不生效,会把注释并入 pattern)
 
+## 机器层（repo-kit · link-only）
+
+- `schema/taxonomy.json` + `schema/kit.lock.json`（kit `2.9.0` / 规范 `2.1.4` / `link-only`）+ `tools/repo-kit/check_repo.py`
+- 校验：`python tools/repo-kit/check_repo.py --root .`；锁哈希：`pwsh tools/update-repo-kit.ps1 -Check`
+- 只查**链接与锚点**：全仓 md 豁免 frontmatter（本仓 docs 不套知识库 schema）
+- `schema/kit.lock.json` **不要手改**，升级只能跑 `tools/update-repo-kit.ps1`
+
 ## 常用命令
 
 ```bash

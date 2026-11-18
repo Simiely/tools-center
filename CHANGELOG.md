@@ -1,4 +1,10 @@
 # CHANGELOG.md
+
+## 2026-11-18 · 接入 repo-kit 机器层（link-only）
+
+- `schema/taxonomy.json` + `schema/kit.lock.json`（kit `2.9.0` / 规范 `2.1.4` / `link-only`）+ `tools/repo-kit/check_repo.py`
+- `.github/workflows/repo-check.yml`：md / `schema/**` / `tools/**` 变更时跑链接与锚点检查 + 锁哈希校验
+- 只改文档基建，不动产品代码；验收 `REPO CHECK: PASS`（ERROR=0、WARN=0）、`KIT LOCK: PASS`
 ## 2026-10-09 · README 接入工具表补充
 
 - 「接入的工具」表新增一行 **家庭告警推送**（`ntfy-alert`，私藏仓库）—— 以 link 卡片接入

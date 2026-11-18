@@ -4,7 +4,10 @@ data/
 *.log.err
 
 # ===== 工具目录(挂载卷,工具代码在各仓库,不入库) =====
-tools/
+# 注意：不能写 `tools/`——父目录被排除后无法再包含子目录（gitignore(5)）。
+# 用 `tools/*` 只忽略内容，再把仓库自带的校验器捞回来。
+tools/*
+!tools/repo-kit/
 
 # ===== 工具凭证/敏感(严禁上传) =====
 tools/*/wb-accounts.json
